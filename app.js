@@ -1,89 +1,15 @@
 (() => {
-  const $ = (selector) => document.querySelector(selector);
-  const form = $('#search-form');
-  const input = $('#search-input');
-  const clearButton = $('#clear-button');
-  const status = $('#status');
-  const count = $('#results-count');
-  const results = $('#results');
-  const emptyState = $('#empty-state');
-  const toast = $('#toast');
-  let records = [];
-  let toastTimer;
-
-  const normalizeDigits = (value) => String(value ?? '').replace(/[\u0e50-\u0e59]/g, (digit) => '\u0e40\u0e19\u0090\u0e40\u0e19\u2018\u0e40\u0e19\u2019\u0e40\u0e19\u201c\u0e40\u0e19\u201d\u0e40\u0e19\u2022\u0e40\u0e19\u2013\u0e40\u0e19\u2014\u0e40\u0e19\u0098\u0e40\u0e19\u0099'.indexOf(digit));
-  const normalize = (value) => normalizeDigits(value).toLocaleLowerCase('th-TH').normalize('NFC').replace(/[\s\-_/\\.]+/g, '');
-  const clean = (value) => String(value ?? '').trim();
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
-  const showToast = (message) => { toast.textContent = message; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 2800); };
-
-  const groupRecords = (items) => {
-    const grouped = new Map();
-    items.forEach((item) => {
-      const key = normalize(`${item.firstName} ${item.lastName}`);
-      if (!grouped.has(key)) grouped.set(key, { firstName: item.firstName, lastName: item.lastName, records: [] });
-      grouped.get(key).records.push(item);
-    });
-    return [...grouped.values()];
+  const $ = (s) => document.querySelector(s);
+  const T = {
+    brand: '\u0e18\u0e28', eyebrow: '\u0e07\u0e32\u0e19\u0e18\u0e23\u0e23\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32 \u00b7 \u0e42\u0e23\u0e07\u0e40\u0e23\u0e35\u0e22\u0e19\u0e27\u0e31\u0e14\u0e44\u0e23\u0e48\u0e02\u0e34\u0e07\u0e27\u0e34\u0e17\u0e22\u0e32', title: '\u0e23\u0e30\u0e1a\u0e1a\u0e04\u0e49\u0e19\u0e40\u0e25\u0e02\u0e43\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28', hero: '\u0e04\u0e49\u0e19\u0e2b\u0e32\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1c\u0e39\u0e49\u0e1c\u0e48\u0e32\u0e19\u0e18\u0e23\u0e23\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32\u0e44\u0e14\u0e49\u0e07\u0e48\u0e32\u0e22 \u0e23\u0e27\u0e14\u0e40\u0e23\u0e47\u0e27 \u0e41\u0e25\u0e30\u0e14\u0e39\u0e44\u0e14\u0e49\u0e04\u0e23\u0e1a', search: '\u0e04\u0e49\u0e19\u0e2b\u0e32\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25', searchTitle: '\u0e04\u0e49\u0e19\u0e14\u0e49\u0e27\u0e22\u0e40\u0e25\u0e02\u0e43\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 \u0e0a\u0e37\u0e48\u0e2d \u0e2b\u0e23\u0e37\u0e2d\u0e2a\u0e01\u0e38\u0e25', live: '\u0e40\u0e23\u0e35\u0e22\u0e25\u0e44\u0e17\u0e21\u0e4c', coordinator: '\u0e1c\u0e39\u0e49\u0e1b\u0e23\u0e30\u0e2a\u0e32\u0e19\u0e07\u0e32\u0e19', name: '\u0e19\u0e32\u0e07\u0e2b\u0e31\u0e2a\u0e22\u0e32 \u0e2d\u0e38\u0e2a\u0e32\u0e2b\u0e30', department: '\u0e01\u0e25\u0e38\u0e48\u0e21\u0e2a\u0e32\u0e23\u0e30', departmentName: '\u0e2a\u0e31\u0e07\u0e04\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32\u0e2f \u00b7 \u0e2b\u0e49\u0e2d\u0e07\u0e18\u0e23\u0e23\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32 524', emptyTitle: '\u0e40\u0e23\u0e34\u0e48\u0e21\u0e04\u0e49\u0e19\u0e2b\u0e32\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25', emptyDesc: '\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e25\u0e02\u0e43\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 \u0e0a\u0e37\u0e48\u0e2d \u0e2b\u0e23\u0e37\u0e2d\u0e2a\u0e01\u0e38\u0e25\u0e43\u0e19\u0e0a\u0e48\u0e2d\u0e07\u0e04\u0e49\u0e19\u0e2b\u0e32', footer: '\u0e07\u0e32\u0e19\u0e18\u0e23\u0e23\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32 \u0e42\u0e23\u0e07\u0e40\u0e23\u0e35\u0e22\u0e19\u0e27\u0e31\u0e14\u0e44\u0e23\u0e48\u0e02\u0e34\u0e07\u0e27\u0e34\u0e17\u0e22\u0e32'
   };
-
-  const render = (query = '') => {
-    const needle = normalize(query);
-    results.replaceChildren();
-    if (!needle) { count.textContent = ''; emptyState.hidden = false; status.textContent = '\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e04\u0e49\u0e19\u0e2b\u0e32'; return; }
-    const matches = records.filter((item) => [item.certificateNo, item.firstName, item.lastName, item.fullName, item.level, item.educationLevel, item.examYear].some((value) => normalize(value).includes(needle)));
-    const people = groupRecords(matches);
-    emptyState.hidden = people.length > 0;
-    count.textContent = `${matches.length.toLocaleString('th-TH')} \u0e43\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 \u00b7 ${people.length.toLocaleString('th-TH')} \u0e04\u0e19`;
-    status.textContent = people.length ? '\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e15\u0e23\u0e07\u0e01\u0e31\u0e19' : '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e15\u0e23\u0e07\u0e01\u0e31\u0e19';
-    people.forEach((person) => {
-      const article = document.createElement('article');
-      article.className = 'result-card';
-      const rows = person.records.sort((a, b) => String(b.examYear).localeCompare(String(a.examYear))).map((item) => `<div class="record-row"><div class="record-field"><small>\u0e40\u0e19\u20ac\u0e40\u0e18\u0e05\u0e40\u0e18\u0082\u0e40\u0e19\u0083\u0e40\u0e18\u009a\u0e40\u0e18\u009b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e08</small><strong>${escapeHtml(item.certificateNo || '-')}</strong></div><div class="record-field"><small>\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u201d\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e0d\u0e40\u0e18\u009a\u0e40\u0e19\u0084\u0e40\u0e18\u201d\u0e40\u0e19\u0089</small><strong>${escapeHtml(item.level || '-')}</strong></div><div class="record-field"><small>\u0e40\u0e18\u009b\u0e40\u0e18\u0e15\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12</small><strong>${escapeHtml(item.examYear || '-')}</strong></div><span class="level-badge">${escapeHtml(item.educationLevel || '\u0e40\u0e18\u0098\u0e40\u0e18\u0e03\u0e40\u0e18\u0e03\u0e40\u0e18\u0e01\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12')}</span></div>`).join('');
-      article.innerHTML = `<div class="person-summary"><div><p class="person-label">\u0e40\u0e18\u009c\u0e40\u0e18\u0e19\u0e40\u0e19\u0089\u0e40\u0e18\u009c\u0e40\u0e19\u0088\u0e40\u0e18\u0e12\u0e40\u0e18\u0099\u0e40\u0e18\u0098\u0e40\u0e18\u0e03\u0e40\u0e18\u0e03\u0e40\u0e18\u0e01\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12</p><h2 class="person-name">${escapeHtml(person.firstName)} <span>${escapeHtml(person.lastName)}</span></h2></div><span class="record-count">${person.records.length} \u0e40\u0e18\u0e03\u0e40\u0e18\u0e12\u0e40\u0e18\u0e02\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03</span></div><div class="records-list">${rows}</div><div class="card-actions"><button class="download-button" type="button">\u0e40\u0e18\u201d\u0e40\u0e18\u0e12\u0e40\u0e18\u0e07\u0e40\u0e18\u0099\u0e40\u0e19\u008c\u0e40\u0e19\u0082\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e05\u0e40\u0e18\u201d\u0e40\u0e19\u20ac\u0e40\u0e18\u009b\u0e40\u0e19\u0087\u0e40\u0e18\u0099\u0e40\u0e18\u00a0\u0e40\u0e18\u0e12\u0e40\u0e18\u009e\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e13\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e19\u0082\u0e40\u0e18\u2014\u0e40\u0e18\u0e03\u0e40\u0e18\u0e08\u0e40\u0e18\u0e11\u0e40\u0e18\u009e\u0e40\u0e18\u2014\u0e40\u0e19\u008c \u0e42\u0086\u201c</button></div>`;
-      article.querySelector('.download-button').addEventListener('click', async () => {
-        if (!window.html2canvas) return showToast('\u0e40\u0e18\u0081\u0e40\u0e18\u0e13\u0e40\u0e18\u0e05\u0e40\u0e18\u0e11\u0e40\u0e18\u0087\u0e40\u0e19\u20ac\u0e40\u0e18\u2022\u0e40\u0e18\u0e03\u0e40\u0e18\u0e15\u0e40\u0e18\u0e02\u0e40\u0e18\u0e01\u0e40\u0e19\u20ac\u0e40\u0e18\u0084\u0e40\u0e18\u0e03\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0087\u0e40\u0e18\u0e01\u0e40\u0e18\u0e17\u0e40\u0e18\u0e0d\u0e40\u0e18\u201d\u0e40\u0e18\u0e12\u0e40\u0e18\u0e07\u0e40\u0e18\u0099\u0e40\u0e19\u008c\u0e40\u0e19\u0082\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e05\u0e40\u0e18\u201d \u0e40\u0e18\u0e05\u0e40\u0e18\u0e0d\u0e40\u0e18\u0087\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e15\u0e40\u0e18\u0081\u0e40\u0e18\u0084\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e19\u0089\u0e40\u0e18\u0087');
-        showToast('\u0e40\u0e18\u0081\u0e40\u0e18\u0e13\u0e40\u0e18\u0e05\u0e40\u0e18\u0e11\u0e40\u0e18\u0087\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e12\u0e40\u0e18\u0087\u0e40\u0e18\u00a0\u0e40\u0e18\u0e12\u0e40\u0e18\u009e\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e13\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e18\u009a\u0e40\u0e18\u0e11\u0e40\u0e18\u0099\u0e40\u0e18\u2014\u0e40\u0e18\u0e16\u0e40\u0e18\u0081...');
-        const canvas = await html2canvas(article, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
-        const link = document.createElement('a');
-        link.download = `certificate-${clean(person.firstName)}-${clean(person.lastName)}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showToast('\u0e40\u0e18\u201d\u0e40\u0e18\u0e12\u0e40\u0e18\u0e07\u0e40\u0e18\u0099\u0e40\u0e19\u008c\u0e40\u0e19\u0082\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e05\u0e40\u0e18\u201d\u0e40\u0e18\u00a0\u0e40\u0e18\u0e12\u0e40\u0e18\u009e\u0e40\u0e19\u20ac\u0e40\u0e18\u0e03\u0e40\u0e18\u0e15\u0e40\u0e18\u0e02\u0e40\u0e18\u009a\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e02\u0e40\u0e19\u0081\u0e40\u0e18\u0e05\u0e40\u0e19\u0089\u0e40\u0e18\u0e07');
-      });
-      results.append(article);
-    });
-  };
-
-  const mapRecord = (item, key) => ({
-    id: key,
-    certificateNo: clean(item.certificateNo),
-    firstName: clean(item.firstName),
-    lastName: clean(item.lastName),
-    fullName: clean(item.fullName),
-    level: clean(item.level),
-    educationLevel: clean(item.educationLevel),
-    examYear: clean(item.examYear),
-    receivedDate: clean(item.receivedDate),
-    note: clean(item.note)
-  });
-
-  const start = () => {
-    if (!window.APP_CONFIG?.firebase?.projectId) { status.textContent = '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e10\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25'; return; }
-    try {
-      firebase.initializeApp(window.APP_CONFIG.firebase);
-      firebase.database().ref('certificates').on('value', (snapshot) => {
-        const raw = snapshot.val() || {};
-        records = Object.entries(raw).map(([key, item]) => mapRecord(item, key)).filter((item) => item.certificateNo || item.firstName || item.lastName);
-        status.textContent = `\u0e10\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e43\u0e0a\u0e49\u0e07\u0e32\u0e19 \u00b7 ${records.length.toLocaleString('th-TH')} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23`;
-        if (input.value) render(input.value);
-      }, () => { status.textContent = '\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e10\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08'; });
-    } catch (error) { console.error(error); status.textContent = '\u0e23\u0e30\u0e1a\u0e1a\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e43\u0e0a\u0e49\u0e07\u0e32\u0e19'; }
-  };
-
-  form.addEventListener('submit', (event) => { event.preventDefault(); render(input.value); input.blur(); });
-  input.addEventListener('input', () => { clearButton.hidden = !input.value; render(input.value); });
-  clearButton.addEventListener('click', () => { input.value = ''; clearButton.hidden = true; render(); input.focus(); });
-  start();
+  [['#brand-mark','brand'],['#eyebrow','eyebrow'],['#page-title','title'],['#hero-description','hero'],['#search-kicker','search'],['#search-title','searchTitle'],['#live-label','live'],['#search-label','search'],['#search-button','search'],['#coordinator-label','coordinator'],['#coordinator-name','name'],['#department-label','department'],['#department-name','departmentName'],['#empty-title','emptyTitle'],['#empty-description','emptyDesc'],['#footer-left','footer']].forEach(([selector,key]) => { $(selector).textContent = T[key]; });
+  $('#search-input').placeholder = '\u0e40\u0e0a\u0e48\u0e19 24265/03606 \u0e2b\u0e23\u0e37\u0e2d \u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e2a\u0e2d\u0e1a';
+  const form = $('#search-form'), input = $('#search-input'), clear = $('#clear-button'), status = $('#status'), count = $('#results-count'), results = $('#results'), empty = $('#empty-state'), toast = $('#toast'); let data = [], timer;
+  const norm = (v) => String(v ?? '').replace(/[\u0e50-\u0e59]/g, (d) => '\u0e50\u0e51\u0e52\u0e53\u0e54\u0e55\u0e56\u0e57\u0e58\u0e59'.indexOf(d)).toLocaleLowerCase('th-TH').normalize('NFC').replace(/[\s\-_/\\.]+/g, '');
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const notify = (message) => { toast.textContent = message; toast.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => toast.classList.remove('show'), 2600); };
+  const render = (query = '') => { const q = norm(query); results.replaceChildren(); if (!q) { count.textContent=''; empty.hidden=false; return; } const found = data.filter((x) => [x.certificateNo,x.firstName,x.lastName,x.fullName,x.level,x.educationLevel,x.examYear].some((v) => norm(v).includes(q))); const groups = new Map(); found.forEach((x) => { const k=norm(`${x.firstName} ${x.lastName}`); if(!groups.has(k)) groups.set(k,{firstName:x.firstName,lastName:x.lastName,rows:[]}); groups.get(k).rows.push(x); }); empty.hidden=groups.size>0; count.textContent=`${found.length.toLocaleString('th-TH')} \u0e43\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 \u00b7 ${groups.size.toLocaleString('th-TH')} \u0e04\u0e19`; groups.forEach((p) => { const card=document.createElement('article'); card.className='result-card'; const rows=p.rows.map((x)=>`<div class="record-row"><div class="record-field"><small>\u0e40\u0e25\u0e02\u0e43\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28</small><strong>${esc(x.certificateNo||'-')}</strong></div><div class="record-field"><small>\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e17\u0e35\u0e48\u0e2a\u0e2d\u0e1a\u0e44\u0e14\u0e49</small><strong>${esc(x.level||'-')}</strong></div><div class="record-field"><small>\u0e1b\u0e35\u0e01\u0e32\u0e23\u0e28\u0e36\u0e01\u0e29\u0e32</small><strong>${esc(x.examYear||'-')}</strong></div><span class="level-badge">${esc(x.educationLevel||'\u0e18\u0e23\u0e23\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32')}</span></div>`).join(''); card.innerHTML=`<div class="person-summary"><div><p class="person-label">\u0e1c\u0e39\u0e49\u0e1c\u0e48\u0e32\u0e19\u0e18\u0e23\u0e23\u0e21\u0e28\u0e36\u0e01\u0e29\u0e32</p><h2 class="person-name">${esc(p.firstName)} <span>${esc(p.lastName)}</span></h2></div><span class="record-count">${p.rows.length} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</span></div><div class="records-list">${rows}</div>`; results.append(card); }); };
+  const start = () => { if (!window.APP_CONFIG?.firebase?.projectId) { status.textContent='Database is not configured'; return; } firebase.initializeApp(window.APP_CONFIG.firebase); firebase.database().ref('certificates').on('value',(snap)=>{ const raw=snap.val()||{}; data=Object.entries(raw).map(([id,x])=>({id,certificateNo:String(x.certificateNo||''),firstName:String(x.firstName||''),lastName:String(x.lastName||''),fullName:String(x.fullName||''),level:String(x.level||''),educationLevel:String(x.educationLevel||''),examYear:String(x.examYear||'')})); status.textContent=`Database ready \u00b7 ${data.length.toLocaleString('th-TH')} records`; if(input.value) render(input.value); },()=>{status.textContent='Database connection failed';}); };
+  form.addEventListener('submit',(e)=>{e.preventDefault();render(input.value);}); input.addEventListener('input',()=>{clear.hidden=!input.value;render(input.value);}); clear.addEventListener('click',()=>{input.value='';clear.hidden=true;render();input.focus();}); start();
 })();
-
