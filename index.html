@@ -3,29 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ระบบค้นเลขใบประกาศ" />
-    <title>ระบบค้นเลขใบประกาศ</title>
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="description" content="เธฃเธฐเธเธเธเนเธเน€เธฅเธเนเธเธเธฃเธฐเธเธฒเธจ เธเธฒเธเธเธฃเธฃเธกเธจเธถเธเธฉเธฒ เนเธฃเธเน€เธฃเธตเธขเธเธงเธฑเธ”เนเธฃเนเธเธดเธเธงเธดเธ—เธขเธฒ" />
+    <title>เธฃเธฐเธเธเธเนเธเน€เธฅเธเนเธเธเธฃเธฐเธเธฒเธจ | เนเธฃเธเน€เธฃเธตเธขเธเธงเธฑเธ”เนเธฃเนเธเธดเธเธงเธดเธ—เธขเธฒ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="container">
-      <section class="card hero">
-        <p class="eyebrow">ธรรมศึกษา</p>
-        <h1>ระบบค้นเลขใบประกาศ</h1>
-        <p class="subtitle">ค้นหาด้วยเลขใบประกาศหรือชื่อผู้สอบ</p>
-        <form id="search-form" class="search-form">
-          <label for="search-input">คำค้นหา</label>
-          <div class="search-row">
-            <input id="search-input" name="query" type="search" placeholder="เช่น ศธ-2568-0001 หรือชื่อผู้สอบ" autocomplete="off" required />
-            <button type="submit">ค้นหา</button>
-          </div>
-        </form>
-        <p id="status" class="status" role="status">กำลังเตรียมระบบ…</p>
+    <main class="page-shell">
+      <section class="hero-panel">
+        <div class="brand-mark" aria-hidden="true">เธเธจ</div>
+        <div class="hero-copy">
+          <p class="eyebrow">เธเธฒเธเธเธฃเธฃเธกเธจเธถเธเธฉเธฒ ยท เนเธฃเธเน€เธฃเธตเธขเธเธงเธฑเธ”เนเธฃเนเธเธดเธเธงเธดเธ—เธขเธฒ</p>
+          <h1>เธฃเธฐเธเธเธเนเธเน€เธฅเธเนเธเธเธฃเธฐเธเธฒเธจ</h1>
+          <p class="hero-description">เธเนเธเธซเธฒเธเนเธญเธกเธนเธฅเธเธนเนเธเนเธฒเธเธเธฃเธฃเธกเธจเธถเธเธฉเธฒเนเธ”เนเธเนเธฒเธข เธฃเธงเธ”เน€เธฃเนเธง เนเธฅเธฐเธ”เธนเนเธ”เนเธเธฃเธเธ—เธธเธเธฃเธฐเธ”เธฑเธ เธ—เธธเธเธเธตเธเธฒเธฃเธจเธถเธเธฉเธฒ</p>
+        </div>
+        <div class="hero-orb hero-orb-one" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb-two" aria-hidden="true"></div>
       </section>
-      <section id="results" class="results" aria-live="polite"></section>
+
+      <section class="search-panel" aria-labelledby="search-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">เธเนเธเธซเธฒเธเนเธญเธกเธนเธฅ</p>
+            <h2 id="search-title">เธเนเธเธ”เนเธงเธขเน€เธฅเธเนเธเธเธฃเธฐเธเธฒเธจ เธเธทเนเธญ เธซเธฃเธทเธญเธชเธเธธเธฅ</h2>
+          </div>
+          <span class="live-pill"><span class="live-dot"></span>เน€เธฃเธตเธขเธฅเนเธ—เธกเน</span>
+        </div>
+        <form id="search-form" class="search-form">
+          <label class="sr-only" for="search-input">เธเธณเธเนเธเธซเธฒ</label>
+          <div class="search-box">
+            <span class="search-icon" aria-hidden="true">โ•</span>
+            <input id="search-input" name="query" type="search" placeholder="เน€เธเนเธ 24265/03606 เธซเธฃเธทเธญ เธเธเธฒเธเธดเธ เธซเธฃเธทเธญ เธญเธณเธ " autocomplete="off" />
+            <button id="clear-button" class="clear-button" type="button" aria-label="เธฅเนเธฒเธเธเธณเธเนเธเธซเธฒ" hidden>ร—</button>
+          </div>
+          <button class="primary-button" type="submit"><span>เธเนเธเธซเธฒ</span><span aria-hidden="true">โ’</span></button>
+        </form>
+        <div class="search-hints" aria-label="เธ•เธฑเธงเธญเธขเนเธฒเธเธเธฒเธฃเธเนเธเธซเธฒ">
+          <span>เธเนเธเธซเธฒเนเธ”เนเธ—เธฑเนเธเธเธทเนเธญเธเธฒเธเธชเนเธงเธ</span><span>เน€เธฅเธเนเธ—เธขเนเธฅเธฐเน€เธฅเธเธญเธฒเธฃเธเธดเธ</span><span>เนเธกเนเธ•เนเธญเธเนเธชเนเธเธตเธ”เธซเธฃเธทเธญเน€เธงเนเธเธงเธฃเธฃเธ</span>
+        </div>
+      </section>
+
+      <section class="info-strip" aria-label="เธเนเธญเธกเธนเธฅเธซเธเนเธงเธขเธเธฒเธ">
+        <div class="info-item"><span class="info-icon">โ—</span><div><small>เธเธนเนเธเธฃเธฐเธชเธฒเธเธเธฒเธ</small><strong>เธเธฒเธเธซเธฑเธชเธขเธฒ เธญเธธเธชเธฒเธซเธฐ</strong></div></div>
+        <div class="info-item"><span class="info-icon">โ–ฃ</span><div><small>เธเธฅเธธเนเธกเธชเธฒเธฃเธฐ</small><strong>เธชเธฑเธเธเธกเธจเธถเธเธฉเธฒเธฏ ยท เธซเนเธญเธเธเธฃเธฃเธกเธจเธถเธเธฉเธฒ 524</strong></div></div>
+      </section>
+
+      <section class="results-section" aria-live="polite">
+        <div class="results-toolbar"><p id="status" class="status">เธเธณเธฅเธฑเธเน€เธ•เธฃเธตเธขเธกเธฃเธฐเธเธโ€ฆ</p><div id="results-count" class="results-count"></div></div>
+        <div id="results" class="results-grid"></div>
+        <div id="empty-state" class="empty-state"><div class="empty-icon">โ•</div><h2>เน€เธฃเธดเนเธกเธเนเธเธซเธฒเธเนเธญเธกเธนเธฅ</h2><p>เธเธดเธกเธเนเน€เธฅเธเนเธเธเธฃเธฐเธเธฒเธจ เธเธทเนเธญ เธซเธฃเธทเธญเธชเธเธธเธฅเนเธเธเนเธญเธเธเนเธเธซเธฒ เธฃเธฐเธเธเธเธฐเนเธชเธ”เธเธเธฅเธ—เธฑเธเธ—เธต</p></div>
+      </section>
+
+      <footer class="site-footer"><span>เธเธฒเธเธเธฃเธฃเธกเธจเธถเธเธฉเธฒ เนเธฃเธเน€เธฃเธตเธขเธเธงเธฑเธ”เนเธฃเนเธเธดเธเธงเธดเธ—เธขเธฒ</span><span>เธเนเธญเธกเธนเธฅเธญเนเธฒเธเธญเธดเธ: เธเธฒเธเธเนเธญเธกเธนเธฅเธเธนเนเธเนเธฒเธเธเธฃเธฃเธกเธจเธถเธเธฉเธฒ 2562โ€“2567</span></footer>
     </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="modal" class="modal" hidden><div class="modal-backdrop" data-close-modal></div><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" type="button" data-close-modal aria-label="เธเธดเธ”">ร—</button><div id="modal-content"></div></div></div>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
   </body>
