@@ -13,7 +13,7 @@
   let allRecords = [];
   let toastTimer;
 
-  const normalizeDigits = (value) => String(value ?? '').replace(/[๐-๙]/g, (digit) => '๐๑๒๓๔๕๖๗๘๙'.indexOf(digit));
+  const normalizeDigits = (value) => String(value ?? '').replace(/[\u0e40\u0e19\u0090-\u0e40\u0e19\u0099]/g, (digit) => '\u0e40\u0e19\u0090\u0e40\u0e19\u2018\u0e40\u0e19\u2019\u0e40\u0e19\u201c\u0e40\u0e19\u201d\u0e40\u0e19\u2022\u0e40\u0e19\u2013\u0e40\u0e19\u2014\u0e40\u0e19\u0098\u0e40\u0e19\u0099'.indexOf(digit));
   const normalize = (value) => normalizeDigits(value).toLocaleLowerCase('th-TH').normalize('NFC').replace(/[\s\-_/\\.]+/g, '');
   const clean = (value) => String(value ?? '').trim();
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
@@ -35,53 +35,53 @@
   const render = (query = '') => {
     const needle = normalize(query);
     results.replaceChildren();
-    if (!needle) { count.textContent = ''; emptyState.hidden = false; status.textContent = 'พร้อมค้นหา'; return; }
+    if (!needle) { count.textContent = ''; emptyState.hidden = false; status.textContent = '\u0e40\u0e18\u009e\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0084\u0e40\u0e19\u0089\u0e40\u0e18\u0099\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e12'; return; }
     const matches = allRecords.filter((record) => [record.certificateNo, record.firstName, record.lastName, record.fullName, record.level, record.educationLevel, record.examYear].some((value) => normalize(value).includes(needle)));
     const groups = groupRecords(matches);
     emptyState.hidden = groups.length > 0;
-    count.textContent = `${matches.length.toLocaleString('th-TH')} ใบประกาศ · ${groups.length.toLocaleString('th-TH')} คน`;
-    status.textContent = groups.length ? 'พบข้อมูลที่ตรงกัน' : 'ไม่พบข้อมูลที่ตรงกัน ลองค้นด้วยคำที่สั้นลง';
+    count.textContent = `${matches.length.toLocaleString('th-TH')} \u0e40\u0e19\u0083\u0e40\u0e18\u009a\u0e40\u0e18\u009b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e08 \u0e22\u0e17 ${groups.length.toLocaleString('th-TH')} \u0e40\u0e18\u0084\u0e40\u0e18\u0099`;
+    status.textContent = groups.length ? '\u0e40\u0e18\u009e\u0e40\u0e18\u009a\u0e40\u0e18\u0082\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0e19\u0e40\u0e18\u0e05\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u2022\u0e40\u0e18\u0e03\u0e40\u0e18\u0087\u0e40\u0e18\u0081\u0e40\u0e18\u0e11\u0e40\u0e18\u0099' : '\u0e40\u0e19\u0084\u0e40\u0e18\u0e01\u0e40\u0e19\u0088\u0e40\u0e18\u009e\u0e40\u0e18\u009a\u0e40\u0e18\u0082\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0e19\u0e40\u0e18\u0e05\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u2022\u0e40\u0e18\u0e03\u0e40\u0e18\u0087\u0e40\u0e18\u0081\u0e40\u0e18\u0e11\u0e40\u0e18\u0099 \u0e40\u0e18\u0e05\u0e40\u0e18\u0e0d\u0e40\u0e18\u0087\u0e40\u0e18\u0084\u0e40\u0e19\u0089\u0e40\u0e18\u0099\u0e40\u0e18\u201d\u0e40\u0e19\u0089\u0e40\u0e18\u0e07\u0e40\u0e18\u0e02\u0e40\u0e18\u0084\u0e40\u0e18\u0e13\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e11\u0e40\u0e19\u0089\u0e40\u0e18\u0099\u0e40\u0e18\u0e05\u0e40\u0e18\u0087';
     groups.forEach((person) => {
       const article = document.createElement('article'); article.className = 'result-card';
-      const recordsHtml = person.records.sort((a, b) => String(b.examYear).localeCompare(String(a.examYear))).map((record) => `<div class="record-row"><div class="record-field"><small>เลขใบประกาศ</small><strong>${escapeHtml(record.certificateNo || '-')}</strong></div><div class="record-field"><small>ระดับที่สอบได้</small><strong>${escapeHtml(record.level || '-')}</strong></div><div class="record-field"><small>ปีการศึกษา</small><strong>${escapeHtml(record.examYear || '-')}</strong></div><span class="level-badge">${escapeHtml(record.educationLevel || 'ธรรมศึกษา')}</span></div>`).join('');
-      article.innerHTML = `<div class="person-summary"><div><p class="person-label">ผู้ผ่านธรรมศึกษา</p><h2 class="person-name">${escapeHtml(person.firstName)} <span>${escapeHtml(person.lastName)}</span></h2></div><span class="record-count">${person.records.length} รายการ</span></div><div class="records-list">${recordsHtml}</div><div class="card-actions"><button class="download-button" type="button" data-download>ดาวน์โหลดเป็นภาพสำหรับโทรศัพท์ ↓</button></div>`;
+      const recordsHtml = person.records.sort((a, b) => String(b.examYear).localeCompare(String(a.examYear))).map((record) => `<div class="record-row"><div class="record-field"><small>\u0e40\u0e19\u20ac\u0e40\u0e18\u0e05\u0e40\u0e18\u0082\u0e40\u0e19\u0083\u0e40\u0e18\u009a\u0e40\u0e18\u009b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e08</small><strong>${escapeHtml(record.certificateNo || '-')}</strong></div><div class="record-field"><small>\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u201d\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e0d\u0e40\u0e18\u009a\u0e40\u0e19\u0084\u0e40\u0e18\u201d\u0e40\u0e19\u0089</small><strong>${escapeHtml(record.level || '-')}</strong></div><div class="record-field"><small>\u0e40\u0e18\u009b\u0e40\u0e18\u0e15\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12</small><strong>${escapeHtml(record.examYear || '-')}</strong></div><span class="level-badge">${escapeHtml(record.educationLevel || '\u0e40\u0e18\u0098\u0e40\u0e18\u0e03\u0e40\u0e18\u0e03\u0e40\u0e18\u0e01\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12')}</span></div>`).join('');
+      article.innerHTML = `<div class="person-summary"><div><p class="person-label">\u0e40\u0e18\u009c\u0e40\u0e18\u0e19\u0e40\u0e19\u0089\u0e40\u0e18\u009c\u0e40\u0e19\u0088\u0e40\u0e18\u0e12\u0e40\u0e18\u0099\u0e40\u0e18\u0098\u0e40\u0e18\u0e03\u0e40\u0e18\u0e03\u0e40\u0e18\u0e01\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12</p><h2 class="person-name">${escapeHtml(person.firstName)} <span>${escapeHtml(person.lastName)}</span></h2></div><span class="record-count">${person.records.length} \u0e40\u0e18\u0e03\u0e40\u0e18\u0e12\u0e40\u0e18\u0e02\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03</span></div><div class="records-list">${recordsHtml}</div><div class="card-actions"><button class="download-button" type="button" data-download>\u0e40\u0e18\u201d\u0e40\u0e18\u0e12\u0e40\u0e18\u0e07\u0e40\u0e18\u0099\u0e40\u0e19\u008c\u0e40\u0e19\u0082\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e05\u0e40\u0e18\u201d\u0e40\u0e19\u20ac\u0e40\u0e18\u009b\u0e40\u0e19\u0087\u0e40\u0e18\u0099\u0e40\u0e18\u00a0\u0e40\u0e18\u0e12\u0e40\u0e18\u009e\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e13\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e19\u0082\u0e40\u0e18\u2014\u0e40\u0e18\u0e03\u0e40\u0e18\u0e08\u0e40\u0e18\u0e11\u0e40\u0e18\u009e\u0e40\u0e18\u2014\u0e40\u0e19\u008c \u0e42\u0086\u201c</button></div>`;
       article.querySelector('[data-download]').addEventListener('click', () => downloadCard(article, person));
       results.append(article);
     });
   };
 
   const downloadCard = async (article, person) => {
-    if (!window.html2canvas) { showToast('กำลังเตรียมเครื่องมือดาวน์โหลด ลองอีกครั้ง'); return; }
-    showToast('กำลังสร้างภาพสำหรับบันทึก…');
+    if (!window.html2canvas) { showToast('\u0e40\u0e18\u0081\u0e40\u0e18\u0e13\u0e40\u0e18\u0e05\u0e40\u0e18\u0e11\u0e40\u0e18\u0087\u0e40\u0e19\u20ac\u0e40\u0e18\u2022\u0e40\u0e18\u0e03\u0e40\u0e18\u0e15\u0e40\u0e18\u0e02\u0e40\u0e18\u0e01\u0e40\u0e19\u20ac\u0e40\u0e18\u0084\u0e40\u0e18\u0e03\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0087\u0e40\u0e18\u0e01\u0e40\u0e18\u0e17\u0e40\u0e18\u0e0d\u0e40\u0e18\u201d\u0e40\u0e18\u0e12\u0e40\u0e18\u0e07\u0e40\u0e18\u0099\u0e40\u0e19\u008c\u0e40\u0e19\u0082\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e05\u0e40\u0e18\u201d \u0e40\u0e18\u0e05\u0e40\u0e18\u0e0d\u0e40\u0e18\u0087\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e15\u0e40\u0e18\u0081\u0e40\u0e18\u0084\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e19\u0089\u0e40\u0e18\u0087'); return; }
+    showToast('\u0e40\u0e18\u0081\u0e40\u0e18\u0e13\u0e40\u0e18\u0e05\u0e40\u0e18\u0e11\u0e40\u0e18\u0087\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e12\u0e40\u0e18\u0087\u0e40\u0e18\u00a0\u0e40\u0e18\u0e12\u0e40\u0e18\u009e\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e13\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e18\u009a\u0e40\u0e18\u0e11\u0e40\u0e18\u0099\u0e40\u0e18\u2014\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e42\u20ac\u0e06');
     const canvas = await html2canvas(article, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
-    const link = document.createElement('a'); link.download = `ใบประกาศ-${clean(person.firstName)}-${clean(person.lastName)}.png`; link.href = canvas.toDataURL('image/png'); link.click(); showToast('ดาวน์โหลดภาพเรียบร้อยแล้ว');
+    const link = document.createElement('a'); link.download = `\u0e40\u0e19\u0083\u0e40\u0e18\u009a\u0e40\u0e18\u009b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e08-${clean(person.firstName)}-${clean(person.lastName)}.png`; link.href = canvas.toDataURL('image/png'); link.click(); showToast('\u0e40\u0e18\u201d\u0e40\u0e18\u0e12\u0e40\u0e18\u0e07\u0e40\u0e18\u0099\u0e40\u0e19\u008c\u0e40\u0e19\u0082\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e05\u0e40\u0e18\u201d\u0e40\u0e18\u00a0\u0e40\u0e18\u0e12\u0e40\u0e18\u009e\u0e40\u0e19\u20ac\u0e40\u0e18\u0e03\u0e40\u0e18\u0e15\u0e40\u0e18\u0e02\u0e40\u0e18\u009a\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e02\u0e40\u0e19\u0081\u0e40\u0e18\u0e05\u0e40\u0e19\u0089\u0e40\u0e18\u0e07');
   };
 
   const mapRecord = (item, key) => ({
     id: key,
-    certificateNo: clean(item.certificateNo ?? item.number ?? item.เลขที่),
-    firstName: clean(item.firstName ?? item.name ?? item.ชื่อ),
-    lastName: clean(item.lastName ?? item.surname ?? item.สกุล),
+    certificateNo: clean(item.certificateNo ?? item.number ?? item.\u0e40\u0e19\u20ac\u0e40\u0e18\u0e05\u0e40\u0e18\u0082\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088),
+    firstName: clean(item.firstName ?? item.name ?? item.\u0e40\u0e18\u008a\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d),
+    lastName: clean(item.lastName ?? item.surname ?? item.\u0e40\u0e18\u0e0a\u0e40\u0e18\u0081\u0e40\u0e18\u0e18\u0e40\u0e18\u0e05),
     fullName: clean(item.fullName),
-    level: clean(item.level ?? item.ระดับที่สอบไล่ได้),
-    educationLevel: clean(item.educationLevel ?? item.education ?? item.ระดับการศึกษา),
-    examYear: clean(item.examYear ?? item.year ?? item.ประจำปี),
-    signature: clean(item.signature ?? item.ลายมือชื่อ),
-    receivedDate: clean(item.receivedDate ?? item.วันที่รับ ?? item['ว/ด/ป ที่รับ']),
-    note: clean(item.note ?? item.หมายเหตุ)
+    level: clean(item.level ?? item.\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u201d\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e0d\u0e40\u0e18\u009a\u0e40\u0e19\u0084\u0e40\u0e18\u0e05\u0e40\u0e19\u0088\u0e40\u0e19\u0084\u0e40\u0e18\u201d\u0e40\u0e19\u0089),
+    educationLevel: clean(item.educationLevel ?? item.education ?? item.\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u201d\u0e40\u0e18\u0e11\u0e40\u0e18\u009a\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03\u0e40\u0e18\u0e08\u0e40\u0e18\u0e16\u0e40\u0e18\u0081\u0e40\u0e18\u0e09\u0e40\u0e18\u0e12),
+    examYear: clean(item.examYear ?? item.year ?? item.\u0e40\u0e18\u009b\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u0088\u0e40\u0e18\u0e13\u0e40\u0e18\u009b\u0e40\u0e18\u0e15),
+    signature: clean(item.signature ?? item.\u0e40\u0e18\u0e05\u0e40\u0e18\u0e12\u0e40\u0e18\u0e02\u0e40\u0e18\u0e01\u0e40\u0e18\u0e17\u0e40\u0e18\u0e0d\u0e40\u0e18\u008a\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d),
+    receivedDate: clean(item.receivedDate ?? item.\u0e40\u0e18\u0e07\u0e40\u0e18\u0e11\u0e40\u0e18\u0099\u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e18\u009a ?? item['\u0e40\u0e18\u0e07/\u0e40\u0e18\u201d/\u0e40\u0e18\u009b \u0e40\u0e18\u2014\u0e40\u0e18\u0e15\u0e40\u0e19\u0088\u0e40\u0e18\u0e03\u0e40\u0e18\u0e11\u0e40\u0e18\u009a']),
+    note: clean(item.note ?? item.\u0e40\u0e18\u0e0b\u0e40\u0e18\u0e01\u0e40\u0e18\u0e12\u0e40\u0e18\u0e02\u0e40\u0e19\u20ac\u0e40\u0e18\u0e0b\u0e40\u0e18\u2022\u0e40\u0e18\u0e18)
   });
 
   const start = async () => {
-    if (!window.APP_CONFIG?.firebase?.projectId || window.APP_CONFIG.firebase.projectId === 'เติมค่า') { status.textContent = 'ยังไม่ได้เชื่อมต่อฐานข้อมูล'; emptyState.hidden = false; return; }
+    if (!window.APP_CONFIG?.firebase?.projectId || window.APP_CONFIG.firebase.projectId === '\u0e40\u0e19\u20ac\u0e40\u0e18\u2022\u0e40\u0e18\u0e14\u0e40\u0e18\u0e01\u0e40\u0e18\u0084\u0e40\u0e19\u0088\u0e40\u0e18\u0e12') { status.textContent = '\u0e40\u0e18\u0e02\u0e40\u0e18\u0e11\u0e40\u0e18\u0087\u0e40\u0e19\u0084\u0e40\u0e18\u0e01\u0e40\u0e19\u0088\u0e40\u0e19\u0084\u0e40\u0e18\u201d\u0e40\u0e19\u0089\u0e40\u0e19\u20ac\u0e40\u0e18\u008a\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u2022\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0090\u0e40\u0e18\u0e12\u0e40\u0e18\u0099\u0e40\u0e18\u0082\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0e19\u0e40\u0e18\u0e05'; emptyState.hidden = false; return; }
     try {
       firebase.initializeApp(window.APP_CONFIG.firebase);
       firebase.database().ref('certificates').on('value', (snapshot) => {
         const raw = snapshot.val() || {};
         allRecords = Object.entries(raw).map(([key, item]) => mapRecord(item, key)).filter((item) => item.certificateNo || item.firstName || item.lastName);
-        status.textContent = `ฐานข้อมูลพร้อมใช้งาน · ${allRecords.length.toLocaleString('th-TH')} รายการ`;
+        status.textContent = `\u0e40\u0e18\u0090\u0e40\u0e18\u0e12\u0e40\u0e18\u0099\u0e40\u0e18\u0082\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0e19\u0e40\u0e18\u0e05\u0e40\u0e18\u009e\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e19\u0083\u0e40\u0e18\u008a\u0e40\u0e19\u0089\u0e40\u0e18\u0087\u0e40\u0e18\u0e12\u0e40\u0e18\u0099 \u0e22\u0e17 ${allRecords.length.toLocaleString('th-TH')} \u0e40\u0e18\u0e03\u0e40\u0e18\u0e12\u0e40\u0e18\u0e02\u0e40\u0e18\u0081\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03`;
         if (input.value) render(input.value);
-      }, () => { status.textContent = 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ'; showToast('ไม่สามารถเชื่อมต่อฐานข้อมูลได้ในขณะนี้'); });
-    } catch (error) { console.error(error); status.textContent = 'ระบบยังไม่พร้อมใช้งาน'; }
+      }, () => { status.textContent = '\u0e40\u0e19\u20ac\u0e40\u0e18\u008a\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u2022\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0090\u0e40\u0e18\u0e12\u0e40\u0e18\u0099\u0e40\u0e18\u0082\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0e19\u0e40\u0e18\u0e05\u0e40\u0e19\u0084\u0e40\u0e18\u0e01\u0e40\u0e19\u0088\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e13\u0e40\u0e19\u20ac\u0e40\u0e18\u0e03\u0e40\u0e19\u0087\u0e40\u0e18\u0088'; showToast('\u0e40\u0e19\u0084\u0e40\u0e18\u0e01\u0e40\u0e19\u0088\u0e40\u0e18\u0e0a\u0e40\u0e18\u0e12\u0e40\u0e18\u0e01\u0e40\u0e18\u0e12\u0e40\u0e18\u0e03\u0e40\u0e18\u2013\u0e40\u0e19\u20ac\u0e40\u0e18\u008a\u0e40\u0e18\u0e17\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u2022\u0e40\u0e19\u0088\u0e40\u0e18\u0e0d\u0e40\u0e18\u0090\u0e40\u0e18\u0e12\u0e40\u0e18\u0099\u0e40\u0e18\u0082\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e18\u0e19\u0e40\u0e18\u0e05\u0e40\u0e19\u0084\u0e40\u0e18\u201d\u0e40\u0e19\u0089\u0e40\u0e19\u0083\u0e40\u0e18\u0099\u0e40\u0e18\u0082\u0e40\u0e18\u201c\u0e40\u0e18\u0e10\u0e40\u0e18\u0099\u0e40\u0e18\u0e15\u0e40\u0e19\u0089'); });
+    } catch (error) { console.error(error); status.textContent = '\u0e40\u0e18\u0e03\u0e40\u0e18\u0e10\u0e40\u0e18\u009a\u0e40\u0e18\u009a\u0e40\u0e18\u0e02\u0e40\u0e18\u0e11\u0e40\u0e18\u0087\u0e40\u0e19\u0084\u0e40\u0e18\u0e01\u0e40\u0e19\u0088\u0e40\u0e18\u009e\u0e40\u0e18\u0e03\u0e40\u0e19\u0089\u0e40\u0e18\u0e0d\u0e40\u0e18\u0e01\u0e40\u0e19\u0083\u0e40\u0e18\u008a\u0e40\u0e19\u0089\u0e40\u0e18\u0087\u0e40\u0e18\u0e12\u0e40\u0e18\u0099'; }
   };
 
   form.addEventListener('submit', (event) => { event.preventDefault(); render(input.value); input.blur(); });
@@ -89,3 +89,4 @@
   clearButton.addEventListener('click', () => { input.value = ''; clearButton.hidden = true; render(); input.focus(); });
   start();
 })();
+
