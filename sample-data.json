@@ -1,0 +1,13 @@
+{
+  "certificates": {
+    "CERT-2568-0001": {
+      "certificateNo": "ศธ-2568-0001",
+      "searchKey": "ศธ25680001",
+      "fullName": "ตัวอย่าง นักเรียน",
+      "school": "โรงเรียนตัวอย่าง",
+      "level": "ธรรมศึกษาชั้นตรี",
+      "examYear": 2568,
+      "documentUrl": "https://drive.google.com/"
+    }
+  }
+}
