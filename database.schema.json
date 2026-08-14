@@ -1,0 +1,19 @@
+{
+  "certificates": {
+    "{certificateId}": {
+      "certificateNo": "string",
+      "searchKey": "string",
+      "fullName": "string",
+      "school": "string",
+      "level": "string",
+      "examYear": "number",
+      "documentUrl": "string|null",
+      "sourceFileId": "string|null",
+      "updatedAt": "ISO-8601 string"
+    }
+  },
+  "metadata": {
+    "lastImportAt": "ISO-8601 string",
+    "source": "google-drive"
+  }
+}
