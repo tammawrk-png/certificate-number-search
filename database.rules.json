@@ -1,0 +1,9 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": false,
+    "certificates": {
+      ".indexOn": ["searchKey", "certificateNo", "fullName", "school", "examYear"]
+    }
+  }
+}
