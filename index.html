@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ระบบค้นเลขใบประกาศ" />
+    <title>ระบบค้นเลขใบประกาศ</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="card hero">
+        <p class="eyebrow">ธรรมศึกษา</p>
+        <h1>ระบบค้นเลขใบประกาศ</h1>
+        <p class="subtitle">ค้นหาด้วยเลขใบประกาศหรือชื่อผู้สอบ</p>
+        <form id="search-form" class="search-form">
+          <label for="search-input">คำค้นหา</label>
+          <div class="search-row">
+            <input id="search-input" name="query" type="search" placeholder="เช่น ศธ-2568-0001 หรือชื่อผู้สอบ" autocomplete="off" required />
+            <button type="submit">ค้นหา</button>
+          </div>
+        </form>
+        <p id="status" class="status" role="status">กำลังเตรียมระบบ…</p>
+      </section>
+      <section id="results" class="results" aria-live="polite"></section>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.1.0/firebase-database-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
