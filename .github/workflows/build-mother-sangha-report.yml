@@ -33,6 +33,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y libreoffice-calc
           python -m pip install --disable-pip-version-check --no-cache-dir openpyxl requests google-api-python-client google-auth
+      - name: Preflight protected report inputs
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ vars.DRIVE_SOURCE_FOLDER_ID }}
+          DRIVE_OUTPUT_FOLDER_ID: ${{ vars.DRIVE_OUTPUT_FOLDER_ID }}
+        run: |
+          test -n "$GOOGLE_SERVICE_ACCOUNT_JSON" || { echo "Missing repository secret: GOOGLE_SERVICE_ACCOUNT_JSON"; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "Missing repository secret: SUPABASE_SERVICE_ROLE_KEY"; exit 1; }
+          test -n "$DRIVE_SOURCE_FOLDER_ID" || { echo "Missing repository variable: DRIVE_SOURCE_FOLDER_ID"; exit 1; }
+          test -n "$DRIVE_OUTPUT_FOLDER_ID" || { echo "Missing repository variable: DRIVE_OUTPUT_FOLDER_ID"; exit 1; }
+          test "$DRIVE_SOURCE_FOLDER_ID" != "$DRIVE_OUTPUT_FOLDER_ID" || { echo "Source and output Drive folders must differ"; exit 1; }
       - name: Build and upload exactly one level
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
