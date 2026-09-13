@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import { readdir, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+
+const root = new URL('../supabase/migrations/', import.meta.url);
+const rootPath = fileURLToPath(root);
+const names = (await readdir(rootPath)).filter((name) => name.endsWith('.sql')).sort();
+const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016'];
+assert.deepEqual(names.map((name) => name.slice(0, 4)), expected);
+
+const [m11, m12, m15] = await Promise.all([
+  readFile(join(rootPath, '0011_refresh_certificate_matches.sql'), 'utf8'),
+  readFile(join(rootPath, '0012_student_progress_guidance.sql'), 'utf8'),
+  readFile(join(rootPath, '0015_staff_report_rows.sql'), 'utf8'),
+]);
+assert.doesNotMatch(m11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
+assert.match(m12, /staff_roles/);
+assert.match(m12, /STAFF_ROLE_REQUIRED/);
+assert.doesNotMatch(m15, /grant execute[^;]+to anon/i);
+
+console.log('migration contract test passed');

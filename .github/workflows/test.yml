@@ -18,5 +18,5 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run public surface and roster policy checks
-        run: node --test scripts/public-surface-smoke.mjs scripts/roster-policy.test.mjs
+      - name: Run public surface, migration, and roster policy checks
+        run: node --test scripts/public-surface-smoke.mjs scripts/migration-contract.test.mjs scripts/roster-policy.test.mjs
