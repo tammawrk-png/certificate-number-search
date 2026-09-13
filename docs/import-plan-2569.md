@@ -35,6 +35,13 @@ python3 scripts/build-match-review.py <firebase-import.json> <roster_staging.csv
 จึงเสนอเป็น `auto_matched`; ชื่อซ้ำจะเป็น `review`; ที่ไม่พบจะเป็น `unmatched`
 เพื่อให้เจ้าหน้าที่ตรวจสอบก่อนนำเข้า `legacy_certificates` และ `certificate_matches` จริง
 
+## การตรวจ snapshot Firebase
+
+`scripts/audit-legacy-firebase.py` ใช้ตรวจจำนวนและการกระจายข้อมูลของ snapshot
+โดยไม่พิมพ์ชื่อหรือเลขใบประกาศออกมา เนื่องจาก snapshot ใน workspace อาจเป็นคนละเวลา
+กับฐานข้อมูล Firebase live จึงต้องตรวจ `records` และ `exam_years` ก่อนนำเข้าเสมอ
+ห้ามใช้ตัวเลขจาก snapshot แทนจำนวน live ที่เจ้าหน้าที่ตรวจไว้แล้ว
+
 ## กติกาสมัครเบื้องต้น
 
 - ม.1 และ ม.4 ต้องมีรายการสมัครธรรมศึกษาชั้นตรี
