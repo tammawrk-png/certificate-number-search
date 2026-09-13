@@ -42,6 +42,8 @@ assert.match(staffJs, /review_certificate_match/);
 assert.match(staffJs, /student_correction_review_rows/);
 assert.match(staffJs, /review_student_correction/);
 assert.match(staffJs, /certificate_pickup_report_rows/);
+assert.match(staffJs, /certificate_pickup_report_rows_v2/);
+assert.match(staffJs, /update_certificate_pickup_status/);
 assert.match(staffJs, /sessionStorage/);
 assert.match(staffJs, /provider=google/);
 assert.match(staffJs, /@wrk\.ac\.th/);

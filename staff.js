@@ -29,8 +29,11 @@
     const head = $('#report-head'); const body = $('#report-body'); $('#table-title').textContent = title; $('#row-count').textContent = `${rows.length.toLocaleString('th-TH')} รายการ`;
     if (!rows.length) { head.innerHTML = ''; body.innerHTML = '<tr><td class="empty" colspan="8">ไม่พบข้อมูลสำหรับรายงานนี้</td></tr>'; return; }
     const columns = Object.keys(rows[0]);
-    head.innerHTML = `<tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}${actions ? '<th>การตัดสิน</th>' : ''}</tr>`;
-    body.innerHTML = rows.slice(0, 100).map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column])}</td>`).join('')}${actions ? (row.match_id ? `<td class="review-actions"><button class="mini-button confirm" data-match-id="${escapeHtml(row.match_id)}" data-decision="confirmed">ยืนยัน</button><button class="mini-button reject" data-match-id="${escapeHtml(row.match_id)}" data-decision="rejected">ปฏิเสธ</button></td>` : `<td class="review-actions"><button class="mini-button confirm" data-correction-id="${escapeHtml(row.correction_id)}" data-decision="approved">อนุมัติแก้ไข</button><button class="mini-button reject" data-correction-id="${escapeHtml(row.correction_id)}" data-decision="rejected">ไม่อนุมัติ</button></td>`) : ''}</tr>`).join('');
+    head.innerHTML = `<tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}${actions ? `<th>${actions === 'pickup' ? 'สถานะรับใบประกาศ' : 'การตัดสิน'}</th>` : ''}</tr>`;
+    const actionCell = (row) => actions === 'pickup'
+      ? `<td class="review-actions"><button class="mini-button confirm" data-pickup-id="${escapeHtml(row.certificate_id)}" data-pickup-status="notified">แจ้งแล้ว</button><button class="mini-button confirm" data-pickup-id="${escapeHtml(row.certificate_id)}" data-pickup-status="claimed">รับแล้ว</button></td>`
+      : (row.match_id ? `<td class="review-actions"><button class="mini-button confirm" data-match-id="${escapeHtml(row.match_id)}" data-decision="confirmed">ยืนยัน</button><button class="mini-button reject" data-match-id="${escapeHtml(row.match_id)}" data-decision="rejected">ปฏิเสธ</button></td>` : `<td class="review-actions"><button class="mini-button confirm" data-correction-id="${escapeHtml(row.correction_id)}" data-decision="approved">อนุมัติแก้ไข</button><button class="mini-button reject" data-correction-id="${escapeHtml(row.correction_id)}" data-decision="rejected">ไม่อนุมัติ</button></td>`);
+    body.innerHTML = rows.slice(0, 100).map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column])}</td>`).join('')}${actions ? actionCell(row) : ''}</tr>`).join('');
   };
   const loadCorrectionReview = async () => {
     const year = $('#report-year').value; $('#load-correction-review').disabled = true; setMessage('กำลังโหลดคำขอแก้ไข…');
@@ -45,9 +48,9 @@
   const loadPickupReport = async () => {
     const year = $('#report-year').value; $('#load-pickup-report').disabled = true; setMessage('กำลังโหลดใบประกาศค้างรับ…');
     try {
-      const pickup = await rpc('certificate_pickup_report_rows', { requested_year: year });
+      const pickup = await rpc('certificate_pickup_report_rows_v2', { requested_year: year });
       loadedReports.pickup = pickup;
-      renderTable(pickup, `ใบประกาศค้างรับ · ปี ${year}`);
+      renderTable(pickup, `ใบประกาศค้างรับ · ปี ${year}`, 'pickup');
       const exportButton = document.querySelector('.export-button[data-report="pickup"]');
       if (exportButton) exportButton.disabled = !pickup.length;
       setMessage(`พบใบประกาศค้างรับ ${pickup.length.toLocaleString('th-TH')} รายการ`);
@@ -96,11 +99,14 @@
   $('#load-correction-review').addEventListener('click', loadCorrectionReview);
   $('#load-pickup-report').addEventListener('click', loadPickupReport);
   $('#report-body').addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-match-id], [data-correction-id]');
+    const button = event.target.closest('[data-match-id], [data-correction-id], [data-pickup-id]');
     if (!button) return;
     button.disabled = true;
     try {
-      if (button.dataset.matchId) {
+      if (button.dataset.pickupId) {
+        await rpc('update_certificate_pickup_status', { requested_certificate_id: button.dataset.pickupId, requested_status: button.dataset.pickupStatus, requested_note: null });
+        await loadPickupReport();
+      } else if (button.dataset.matchId) {
         await rpc('review_certificate_match', { requested_match_id: button.dataset.matchId, requested_decision: button.dataset.decision });
         await loadMatchReview();
       } else {
