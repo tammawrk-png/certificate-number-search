@@ -1,1 +1,4 @@
-firebase-import.json
+.firebase/
+firebase-debug.log
+node_modules/
+.DS_Store
