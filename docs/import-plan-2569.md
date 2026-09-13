@@ -46,6 +46,11 @@ python3 scripts/build-match-review.py <firebase-import.json> <roster_staging.csv
 กับฐานข้อมูล Firebase live จึงต้องตรวจ `records` และ `exam_years` ก่อนนำเข้าเสมอ
 ห้ามใช้ตัวเลขจาก snapshot แทนจำนวน live ที่เจ้าหน้าที่ตรวจไว้แล้ว
 
+ก่อนนำเข้า Supabase ให้ใช้ `scripts/build-legacy-import.py` แปลงเป็น CSV
+โดยจะ normalize ชื่อ, ระดับ `ตรี/โท/เอก` และสาย `secondary/higher_education`
+พร้อมเก็บ `source_payload` เดิมไว้เป็นหลักฐาน การแปลงนี้ยังไม่ใช่การเขียนฐานข้อมูล
+และไฟล์ผลลัพธ์ต้องอยู่นอก repository เช่นเดียวกับไฟล์รายชื่อนักเรียน
+
 ## กติกาสมัครเบื้องต้น
 
 - ม.1 และ ม.4 ต้องมีรายการสมัครธรรมศึกษาชั้นตรี
