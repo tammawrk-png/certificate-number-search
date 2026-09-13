@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import csv
 import re
+import unicodedata
 import uuid
 from pathlib import Path
 
@@ -25,6 +26,12 @@ def load_builder():
 
 
 NAMESPACE = uuid.UUID("9c19f8c8-9b1f-4d9a-8cf3-8c18b4fca269")
+THAI_DIGITS = str.maketrans("๐๑๒๓๔๕๖๗๘๙", "0123456789")
+
+
+def normalize_name(value: str) -> str:
+    text = unicodedata.normalize("NFKC", str(value or "")).lower().translate(THAI_DIGITS)
+    return re.sub(r"[\s\-_/\.()]+", "", text)
 
 
 def deterministic_id(kind: str, value: str) -> str:
@@ -78,7 +85,7 @@ def main() -> None:
 
     write_csv(args.output / "academic_years.csv", ["id", "year_be", "is_current"], [{"id": year_id, "year_be": "2569", "is_current": "true"}])
     write_csv(args.output / "teachers.csv", ["id", "display_name", "normalized_name", "active"], [
-        {"id": teacher_id, "display_name": name, "normalized_name": name, "active": "true"}
+        {"id": teacher_id, "display_name": name, "normalized_name": normalize_name(name), "active": "true"}
         for name, teacher_id in sorted(teacher_map.items())
     ])
     write_csv(args.output / "classrooms.csv", list(next(iter(classroom_map.values())).keys()), list(classroom_map.values()))
@@ -91,7 +98,7 @@ def main() -> None:
             "first_name": row["first_name"],
             "last_name": row["last_name"],
             "full_name": f"{row['first_name']} {row['last_name']}".strip(),
-            "normalized_name": f"{row['first_name']}{row['last_name']}".replace(" ", ""),
+            "normalized_name": normalize_name(f"{row['first_name']} {row['last_name']}"),
             "classroom_id": classroom_map[key]["id"],
             "status": "active",
             "source_file_name": row["source_file_name"],
