@@ -5,9 +5,10 @@
 ## ก่อนเริ่ม
 
 1. ตรวจว่า Supabase project เป็น `dharma-education-system` และ URL ใน `config.js` ตรงกับ project เดียวกัน
-2. ตรวจ `git status` และอย่า stage `firebase-import.json` หรือไฟล์ CSV/SQL ที่มี PII
-3. ตรวจ Google Drive profile ก่อนเขียนทุกครั้ง และใช้เฉพาะโฟลเดอร์งานที่ผู้ดูแลกำหนด
-4. ต้นฉบับ `.xls` ใน `00_ต้นฉบับฟอร์มแม่กองธรรม` เป็น read-only ห้าม rename, overwrite, merge หรือปรับรูปแบบ
+2. เมื่อได้ public/publishable key แล้ว ให้ตั้ง GitHub Actions secret ชื่อ `SUPABASE_PUBLISHABLE_KEY` ใน repository เท่านั้น ระบบ deploy จะเติมค่าให้ `config.js` ชั่วคราวระหว่าง build โดยไม่ commit key ลง Git
+3. ตรวจ `git status` และอย่า stage `firebase-import.json` หรือไฟล์ CSV/SQL ที่มี PII
+4. ตรวจ Google Drive profile ก่อนเขียนทุกครั้ง และใช้เฉพาะโฟลเดอร์งานที่ผู้ดูแลกำหนด
+5. ต้นฉบับ `.xls` ใน `00_ต้นฉบับฟอร์มแม่กองธรรม` เป็น read-only ห้าม rename, overwrite, merge หรือปรับรูปแบบ
 
 ## ลำดับ migration
 

@@ -9,6 +9,7 @@ const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config] = await
   readFile(new URL('../staff.js', import.meta.url), 'utf8'),
   readFile(new URL('../config.js', import.meta.url), 'utf8'),
 ]);
+const configBuilder = await readFile(new URL('../scripts/prepare-public-config.mjs', import.meta.url), 'utf8');
 const migration11 = await readFile(new URL('../supabase/migrations/0011_refresh_certificate_matches.sql', import.meta.url), 'utf8');
 const migration12 = await readFile(new URL('../supabase/migrations/0012_student_progress_guidance.sql', import.meta.url), 'utf8');
 const migration15 = await readFile(new URL('../supabase/migrations/0015_staff_report_rows.sql', import.meta.url), 'utf8');
@@ -39,5 +40,7 @@ assert.match(migration19, /revoke all on function public\.public_student_registr
 assert.match(migration19, /grant execute on function public\.public_student_registration_options.*anon, authenticated/s);
 assert.doesNotMatch(config, /(?:service[-_ ]role|client_secret|private_key)\s*[:=]/i);
 assert.match(config, /publishableKey\s*:/);
+assert.match(configBuilder, /SUPABASE_PUBLISHABLE_KEY/);
+assert.match(configBuilder, /Refusing a secret-looking Supabase key/);
 
 console.log('public surface smoke test passed');

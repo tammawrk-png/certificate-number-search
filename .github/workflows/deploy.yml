@@ -27,6 +27,10 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Prepare public runtime config
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: node scripts/prepare-public-config.mjs config.js
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
