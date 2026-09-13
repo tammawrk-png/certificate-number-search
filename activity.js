@@ -160,6 +160,7 @@
         registrationForm.elements.correctionLastName.value = row.last_name || '';
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
+      await loadCertificateAlerts(studentNumber);
       return true;
     } catch (error) {
       console.warn(error);
@@ -169,9 +170,27 @@
       return false;
     }
   };
+  const loadCertificateAlerts = async (studentNumber) => {
+    const node = $('#certificate-alert');
+    node.hidden = true;
+    if (!apiBase || !apiHeaders) return;
+    try {
+      const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_certificate_alerts`, {
+        method: 'POST', headers: apiHeaders,
+        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }),
+      });
+      if (!response.ok) throw new Error(`certificate alert request failed: ${response.status}`);
+      const rows = await response.json();
+      if (!rows.length) return;
+      node.hidden = false;
+      node.innerHTML = `<strong>ประวัติใบประกาศเดิม</strong><p>ระบบพบรายการที่เกี่ยวข้องกับเลขประจำตัวนี้ กรุณาตรวจสอบสถานะรับใบประกาศ</p>` + rows.map((row) =>
+        `<div class="certificate-row"><b>ชั้น${escapeHtml(row.dhamma_level)} · ปี ${escapeHtml(row.exam_year_be || 'ไม่ระบุ')}</b><span>ใบประกาศเลขที่ ${escapeHtml(row.certificate_no || 'รอข้อมูล')}</span><span>ปัจจุบัน: ม.${escapeHtml(row.grade_level)} ห้อง ${escapeHtml(row.room_no)} · ครูที่ปรึกษา ${escapeHtml([row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล')}</span><small>${escapeHtml(row.pickup_message)}</small></div>`).join('');
+    } catch (error) { console.warn(error); }
+  };
   registrationForm.elements.studentNumber.addEventListener('input', () => {
     verifiedStudent = null;
     $('#identity-preview').hidden = true;
+    $('#certificate-alert').hidden = true;
     $('#correction-panel').hidden = true;
   });
   $('#submit-correction').addEventListener('click', async (event) => {

@@ -3,7 +3,7 @@
   const config = window.APP_CONFIG?.supabase;
   const apiBase = config?.url?.replace(/\/$/, '');
   let accessToken = sessionStorage.getItem('dharma_staff_access_token') || '';
-  let loadedReports = { school: [], match: [], corrections: [], ตรี: [], โท: [], เอก: [] };
+  let loadedReports = { school: [], match: [], corrections: [], pickup: [], ตรี: [], โท: [], เอก: [] };
   const headers = () => ({ apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
   const setMessage = (text) => { $('#login-message').textContent = text; $('#report-message').textContent = text; };
   const showWorkspace = (visible) => { $('#login-panel').hidden = visible; $('#workspace').hidden = !visible; };
@@ -37,6 +37,18 @@
       setMessage(`พบคำขอรอตรวจ ${corrections.length.toLocaleString('th-TH')} รายการ`);
     } catch (error) { console.warn(error); setMessage('โหลดคำขอแก้ไขไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
     finally { $('#load-correction-review').disabled = false; }
+  };
+  const loadPickupReport = async () => {
+    const year = $('#report-year').value; $('#load-pickup-report').disabled = true; setMessage('กำลังโหลดใบประกาศค้างรับ…');
+    try {
+      const pickup = await rpc('certificate_pickup_report_rows', { requested_year: year });
+      loadedReports.pickup = pickup;
+      renderTable(pickup, `ใบประกาศค้างรับ · ปี ${year}`);
+      const exportButton = document.querySelector('.export-button[data-report="pickup"]');
+      if (exportButton) exportButton.disabled = !pickup.length;
+      setMessage(`พบใบประกาศค้างรับ ${pickup.length.toLocaleString('th-TH')} รายการ`);
+    } catch (error) { console.warn(error); setMessage('โหลดรายงานใบประกาศค้างรับไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    finally { $('#load-pickup-report').disabled = false; }
   };
   const loadMatchReview = async () => {
     const year = $('#report-year').value; $('#load-match-review').disabled = true; setMessage('กำลังโหลดคิวจับคู่…');
@@ -81,6 +93,7 @@
   $('#load-report').addEventListener('click', loadReports);
   $('#load-match-review').addEventListener('click', loadMatchReview);
   $('#load-correction-review').addEventListener('click', loadCorrectionReview);
+  $('#load-pickup-report').addEventListener('click', loadPickupReport);
   $('#report-body').addEventListener('click', async (event) => {
     const button = event.target.closest('[data-match-id], [data-correction-id]');
     if (!button) return;
