@@ -63,6 +63,8 @@ assert.match(staffJs, /update_certificate_pickup_status/);
 assert.match(staffJs, /reportColumns/);
 assert.match(staffJs, /เลขประจำตัวนักเรียน/);
 assert.match(staffJs, /downloadCsv\([^;]+button\.dataset\.report/);
+assert.match(staffJs, /downloadJson/);
+assert.match(staffHtml, /data-format="json"/);
 assert.match(staffJs, /sessionStorage/);
 assert.match(staffJs, /provider=google/);
 assert.match(staffJs, /@wrk\.ac\.th/);
