@@ -204,8 +204,11 @@
   };
   const loadRegistrationStatus = async (studentNumber) => {
     existingRegistrations = [];
-    registrationForm.elements.level.disabled = false;
-    $('#level-choice-help').textContent = 'ระบบจะแนะนำระดับหลังตรวจประวัติ คุณเปลี่ยนได้ตามความประสงค์และเกณฑ์ที่ระบบแจ้ง';
+    const levelSelect = registrationForm.elements.level;
+    const levelHelp = $('#level-choice-help');
+    const keepLevelLocked = Boolean(lockedLevel) || verifiedStudent?.guidance_status === 'completed';
+    levelSelect.disabled = keepLevelLocked;
+    if (!keepLevelLocked) levelHelp.textContent = 'ระบบจะแนะนำระดับหลังตรวจประวัติ คุณเปลี่ยนได้ตามความประสงค์และเกณฑ์ที่ระบบแจ้ง';
     try {
       const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_registration_status`, { method: 'POST', headers: apiHeaders,
         body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }) });
