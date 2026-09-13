@@ -1,5 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  document.querySelector('[data-brand="dharma"]')?.setAttribute('src', window.SCHOOL_ASSETS?.dharmaLogo || '');
+  document.querySelector('[data-brand="school"]')?.setAttribute('src', window.SCHOOL_ASSETS?.schoolLogo || '');
   const config = window.APP_CONFIG?.supabase;
   const apiBase = config?.url?.replace(/\/$/, '');
   const apiHeaders = config?.publishableKey

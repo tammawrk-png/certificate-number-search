@@ -157,3 +157,8 @@ footer { display: flex; justify-content: space-between; gap: 12px; color: #66708
   .summary-row { display: grid; gap: 3px; }
   .summary-row strong { text-align: left; }
 }
+.brand-lockup { display: flex; align-items: center; gap: 14px; }
+.logo-pair { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border: 1px solid rgba(255,255,255,.35); border-radius: 15px; background: rgba(255,255,255,.12); }
+.school-logo, .dharma-logo { display: block; width: 48px; height: 48px; object-fit: contain; border-radius: 10px; background: #fff; padding: 4px; }
+.dharma-logo { width: 43px; height: 43px; padding: 6px; }
+@media (max-width: 700px) { .brand-lockup { align-items: flex-start; gap: 9px; } .logo-pair { padding: 5px 6px; gap: 5px; } .school-logo, .dharma-logo { width: 37px; height: 37px; padding: 3px; } .dharma-logo { width: 34px; height: 34px; padding: 5px; } }
