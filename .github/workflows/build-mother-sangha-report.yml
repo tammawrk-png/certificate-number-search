@@ -1,0 +1,43 @@
+name: Build Mother Sangha report
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Academic year (BE)
+        required: true
+        default: '2569'
+        type: string
+      level:
+        description: One level only
+        required: true
+        default: ตรี
+        type: choice
+        options: [ตรี, โท, เอก]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mother-sangha-report-${{ inputs.year }}-${{ inputs.level }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install report worker dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libreoffice-calc
+          python -m pip install --disable-pip-version-check --no-cache-dir openpyxl requests google-api-python-client google-auth
+      - name: Build and upload exactly one level
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          DRIVE_SOURCE_FOLDER_ID: ${{ vars.DRIVE_SOURCE_FOLDER_ID }}
+          DRIVE_OUTPUT_FOLDER_ID: ${{ vars.DRIVE_OUTPUT_FOLDER_ID }}
+          SUPABASE_URL: https://jmlcsrmrtghmnpdpfdcf.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/build-drive-reports.py --year '${{ inputs.year }}' --level '${{ inputs.level }}'
