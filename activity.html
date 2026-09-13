@@ -69,9 +69,8 @@
           </section>
           <section class="wizard-step" data-step="2" hidden>
             <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 19c.7-3 2.7-4.5 6-4.5s5.3 1.5 6 4.5"/></svg></span><div><span class="kicker">ขั้นที่ 2 จาก 3</span><h3>ยืนยันว่าเป็นใคร</h3></div></div>
-            <div class="identity-tip"><span class="tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><div><strong>ไม่ต้องพิมพ์ชื่อเอง</strong><span>กรอกเลขประจำตัว ระบบจะแสดงชื่อ ชั้น ห้อง และครูที่ปรึกษาจากทะเบียนกลางให้เลือกยืนยัน</span></div></div>
             <div class="form-grid identity-grid">
-              <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="เช่น 12345" /></label>
+              <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="เช่น 12345" /><small class="field-help">ระบบจะแสดงชื่อ ชั้น ห้อง และครูที่ปรึกษาจากทะเบียนกลางหลังค้นหา</small></label>
             </div>
             <div id="identity-preview" class="identity-preview" aria-live="polite" hidden></div>
             <div id="certificate-alert" class="certificate-alert" aria-live="polite" hidden></div>
