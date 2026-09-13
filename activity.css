@@ -112,6 +112,14 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .preview-grid { display: grid; grid-template-columns: minmax(105px, .35fr) 1fr; gap: 6px 14px; padding: 10px 0; border-top: 1px solid rgba(22,101,52,.14); border-bottom: 1px solid rgba(22,101,52,.14); }
 .preview-grid span { color: #667085; }
 .preview-grid b { color: #14532d; }
+.recommendation-card { display: grid; gap: 2px; padding: 13px 15px; border-radius: 14px; border: 1px solid; }
+.recommendation-card span { font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.recommendation-card b { font-size: 1.12rem; }
+.recommendation-card small { color: inherit; opacity: .82; }
+.recommendation-card.required { color: #991b1b; border-color: #fca5a5; background: #fff1f2; }
+.recommendation-card.suggested { color: #075985; border-color: #7dd3fc; background: #ecfeff; }
+.recommendation-card.completed { color: #475569; border-color: #cbd5e1; background: #f8fafc; }
+.recommendation-card.review { color: #92400e; border-color: #fcd34d; background: #fffbeb; }
 .summary-card { display: grid; gap: 10px; margin-bottom: 20px; padding: 18px; border-radius: 16px; color: #312e81; background: linear-gradient(135deg, #eef2ff, #f5f3ff); }
 .summary-row { display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px dashed #c7d2fe; padding-bottom: 8px; }
 .summary-row:last-child { border-bottom: 0; padding-bottom: 0; }

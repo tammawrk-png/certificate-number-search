@@ -24,6 +24,7 @@
   let registrationOpen = false;
   let verifiedStudent = null;
   let existingRegistrations = [];
+  let lockedLevel = null;
   const syncAcademicYear = (year) => {
     if (!year) return;
     activeAcademicYear = String(year);
@@ -150,17 +151,33 @@
       verifiedStudent = row;
       registrationForm.elements.band.value = row.education_band;
       if (row.required_level) registrationForm.elements.level.value = row.required_level;
+      const levelSelect = registrationForm.elements.level;
+      const levelHelp = $('#level-choice-help');
+      const requiredChoice = Boolean(row.required_level);
+      const completedChoice = row.guidance_status === 'completed';
+      lockedLevel = row.required_level || null;
+      levelSelect.disabled = requiredChoice || completedChoice;
+      levelHelp.textContent = requiredChoice
+        ? `เกณฑ์กำหนดให้ ม.${row.grade_level} สมัครชั้น${row.required_level} ระบบล็อกระดับนี้เพื่อป้องกันเลือกผิด`
+        : completedChoice
+          ? 'พบประวัติชั้นเอกแล้ว ไม่จำเป็นต้องสมัครต่อ หากต้องการสอบซ้ำให้ติดต่อเจ้าหน้าที่'
+          : 'ระบบเลือกคำแนะนำให้เป็นค่าเริ่มต้น แต่คุณเปลี่ยนระดับเองได้ตามความประสงค์และเกณฑ์';
       const advisors = [row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล';
       const recommendation = row.guidance_status === 'review_required'
-        ? 'ประวัติเดิมมีรายการชื่อซ้ำ เจ้าหน้าที่จะตรวจสอบก่อนใช้เป็นคำแนะนำ'
-        : (row.recommended_level ? `ระดับที่ระบบแนะนำ: ${row.recommended_level}` : 'ไม่มีระดับต่อเนื่องที่ต้องสมัคร');
+        ? 'รอเจ้าหน้าที่ตรวจประวัติชื่อซ้ำก่อนใช้เป็นคำแนะนำ'
+        : row.guidance_status === 'required'
+          ? `ต้องสมัครชั้น${row.required_level}`
+          : row.guidance_status === 'completed'
+            ? 'จบชั้นเอกแล้ว ไม่จำเป็นต้องสมัครต่อ'
+            : row.recommended_level ? `แนะนำสมัครชั้น${row.recommended_level}` : 'ยังไม่พบประวัติเดิมที่จับคู่ได้';
+      const recommendationClass = row.guidance_status === 'required' ? 'required' : row.guidance_status === 'completed' ? 'completed' : row.guidance_status === 'review_required' ? 'review' : 'suggested';
       preview.classList.remove('error');
       preview.innerHTML = `<strong>พบข้อมูลของคุณจากเลขประจำตัว — โปรดตรวจสอบ</strong><div class="preview-name">${escapeHtml(row.title || '')}${escapeHtml(row.full_name)}</div><div class="preview-grid">` +
         `<span>สาย/ชั้น</span><b>${escapeHtml(bandLabels[row.education_band] || row.education_band)} · ม.${escapeHtml(row.grade_level)}</b>` +
         `<span>ห้อง</span><b>ห้อง ${escapeHtml(row.room_no)}</b>` +
         `<span>ครูที่ปรึกษา</span><b>${escapeHtml(advisors)}</b>` +
         `<span>ประวัติเดิม</span><b>${escapeHtml(row.highest_legacy_level || 'ยังไม่พบ')} · ${escapeHtml(guidanceLabels[row.guidance_status] || '')}</b>` +
-        `</div><small>${escapeHtml(recommendation)} · ประวัติใบประกาศจะแสดงด้านล่าง หากไม่สอบต่อไม่ต้องยืนยันหรือสมัคร</small>`;
+        `</div><div class="recommendation-card ${recommendationClass}"><span>คำแนะนำการสมัคร</span><b>${escapeHtml(recommendation)}</b><small>${row.guidance_status === 'suggested' ? 'คุณเลือกเปลี่ยนระดับเองได้' : row.guidance_status === 'required' ? 'ระบบล็อกตามเกณฑ์ชั้นเริ่มต้น' : 'ตรวจสอบประวัติประกอบก่อนตัดสินใจ'}</small></div><small>ประวัติใบประกาศจะแสดงด้านล่าง หากไม่สอบต่อไม่ต้องยืนยันหรือสมัคร</small>`;
       const identityResponse = await fetch(`${apiBase}/rest/v1/rpc/public_student_identity`, {
         method: 'POST', headers: apiHeaders,
         body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }),
@@ -187,6 +204,8 @@
   };
   const loadRegistrationStatus = async (studentNumber) => {
     existingRegistrations = [];
+    registrationForm.elements.level.disabled = false;
+    $('#level-choice-help').textContent = 'ระบบจะแนะนำระดับหลังตรวจประวัติ คุณเปลี่ยนได้ตามความประสงค์และเกณฑ์ที่ระบบแจ้ง';
     try {
       const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_registration_status`, { method: 'POST', headers: apiHeaders,
         body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }) });
@@ -216,12 +235,14 @@
   registrationForm.elements.studentNumber.addEventListener('input', () => {
     verifiedStudent = null;
     existingRegistrations = [];
+    lockedLevel = null;
     $('#identity-preview').hidden = true;
     $('#certificate-alert').hidden = true;
     $('#self-edit-panel').hidden = true;
     $('#registration-mode-note').hidden = true;
   });
   registrationForm.elements.level.addEventListener('change', () => {
+    if (lockedLevel) { registrationForm.elements.level.value = lockedLevel; return; }
     const current = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
     const note = $('#registration-mode-note');
     if (note && verifiedStudent) { note.hidden = false; note.textContent = current ? 'มีใบสมัครระดับนี้อยู่แล้ว การกดส่งจะอัปเดตข้อมูลใบสมัครเดิม ไม่สร้างรายการซ้ำ' : 'ยังไม่มีใบสมัครระดับนี้ การกดส่งจะสร้างใบสมัครใหม่'; note.classList.toggle('update-mode', current); }
@@ -276,6 +297,10 @@
       setWizardStep(2);
       return;
     }
+    if (verifiedStudent.guidance_status === 'completed') {
+      message.textContent = 'พบประวัติชั้นเอกแล้ว ไม่จำเป็นต้องสมัครต่อ หากมีความประสงค์สอบซ้ำให้ติดต่อเจ้าหน้าที่';
+      return;
+    }
     const submitButton = event.currentTarget.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     message.textContent = 'กำลังตรวจสอบข้อมูล…';
@@ -287,13 +312,13 @@
           requested_student_number: form.get('studentNumber'),
           requested_full_name: verifiedStudent?.full_name,
           requested_band: form.get('band'),
-          requested_level: form.get('level'),
+          requested_level: registrationForm.elements.level.value,
         }),
       });
       if (!response.ok) throw new Error(`registration request failed: ${response.status}`);
       const rows = await response.json();
       const result = Array.isArray(rows) ? rows[0] : rows;
-      const wasExisting = existingRegistrations.some((item) => item.dhamma_level === form.get('level'));
+      const wasExisting = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
       message.textContent = result?.reference_code
         ? `${wasExisting ? 'อัปเดตใบสมัครเดิมแล้ว' : result.message} เลขอ้างอิง ${result.reference_code}`
         : (result?.message || 'ระบบไม่สามารถยืนยันผลการสมัครได้');
