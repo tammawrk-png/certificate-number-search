@@ -86,9 +86,23 @@ def fetch_rows(year: str, level: str) -> list[dict]:
 
 
 def upload(drive, path: Path, folder_id: str, name: str) -> dict:
-    metadata = {"name": name, "parents": [folder_id], "description": "สร้างจาก Supabase staff report โดย guarded Mother Sangha form worker"}
+    query = " and ".join([
+        f"'{folder_id}' in parents",
+        "trashed = false",
+        f"name = '{name.replace(chr(39), chr(92) + chr(39))}'",
+    ])
+    existing = drive.files().list(q=query, fields="files(id,name,mimeType,parents)", pageSize=10).execute().get("files", [])
+    if len(existing) > 1:
+        raise RuntimeError(f"พบไฟล์ผลลัพธ์ชื่อเดียวกันมากกว่า 1 ไฟล์ในโฟลเดอร์ปลายทาง: {name!r}")
     media = MediaFileUpload(path, mimetype="application/vnd.ms-excel", resumable=True)
-    return drive.files().create(body=metadata, media_body=media, fields="id,name,mimeType,parents,webViewLink").execute()
+    if existing:
+        result = drive.files().update(fileId=existing[0]["id"], body={"name": name}, media_body=media, fields="id,name,mimeType,parents,webViewLink").execute()
+        result["operation"] = "updated"
+        return result
+    metadata = {"name": name, "parents": [folder_id], "description": "สร้างจาก Supabase staff report โดย guarded Mother Sangha form worker"}
+    result = drive.files().create(body=metadata, media_body=media, fields="id,name,mimeType,parents,webViewLink").execute()
+    result["operation"] = "created"
+    return result
 
 
 def main() -> int:
