@@ -41,7 +41,9 @@ as $$
       cm.student_id,
       count(*) filter (where cm.status in ('auto_matched', 'confirmed')) as matched_count,
       count(*) filter (where cm.status = 'review') as review_count,
-      max(case lc.level when 'เอก' then 3 when 'โท' then 2 when 'ตรี' then 1 else 0 end) as highest_level_no
+      max(case when cm.status in ('auto_matched', 'confirmed')
+        then case lc.level when 'เอก' then 3 when 'โท' then 2 when 'ตรี' then 1 else 0 end
+        else 0 end) as highest_level_no
     from certificate_matches cm
     join legacy_certificates lc on lc.id = cm.legacy_certificate_id
     group by cm.student_id

@@ -26,11 +26,13 @@ def read_rows(directory: Path) -> list[dict]:
                 sheet_rows = audit["sheet_rows"](book, sheet_path, strings)
                 advisor = sheet_rows[2].get(2, "") if len(sheet_rows) >= 3 else ""
                 for row in sheet_rows[4:]:
-                    number = row.get(1, "")
-                    student_id = row.get(2, "")
-                    first_name = row.get(3, "")
-                    last_name = row.get(4, "")
-                    if not number.isdigit() or not student_id or not (first_name or last_name):
+                    row_number = row.get(1, "")
+                    student_id = row.get(2, "").strip()
+                    first_name = row.get(3, "").strip()
+                    last_name = row.get(4, "").strip()
+                    # Column 1 is the row sequence; column 2 is the actual
+                    # student number and is the unique key written to SQL.
+                    if not row_number.isdigit() or not student_id.isdigit() or not (first_name or last_name):
                         continue
                     rows.append({
                         "student_number": student_id,
