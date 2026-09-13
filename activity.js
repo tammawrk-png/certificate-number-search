@@ -15,6 +15,7 @@
     imported_results: '#metric-passed',
   };
   let activeAcademicYear = '2569';
+  let registrationOpen = false;
   const syncAcademicYear = (year) => {
     if (!year) return;
     activeAcademicYear = String(year);
@@ -71,6 +72,7 @@
       if (!row) throw new Error('registration window response was empty');
       state.classList.toggle('open', Boolean(row.is_open));
       state.classList.toggle('pending', !row.is_open);
+      registrationOpen = Boolean(row.is_open);
       state.textContent = row.is_open ? 'เปิดรับสมัครแล้ว' : 'ยังไม่เปิดรับสมัคร';
     } catch (error) {
       console.warn(error);
@@ -124,6 +126,10 @@
     const message = $('#registration-message');
     if (!apiBase || !apiHeaders) {
       message.textContent = 'ขณะนี้ยังไม่เปิดรับสมัครจริง ระบบจะเปิดให้บันทึกเมื่อเจ้าหน้าที่ประกาศช่วงรับสมัครและเชื่อม API ครบแล้ว';
+      return;
+    }
+    if (!registrationOpen) {
+      message.textContent = 'ขณะนี้ยังไม่เปิดรับสมัคร กรุณารอติดตามประกาศจากโรงเรียน';
       return;
     }
     const form = new FormData(event.currentTarget);
