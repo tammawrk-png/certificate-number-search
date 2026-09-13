@@ -44,8 +44,42 @@
       state.textContent = 'เชื่อมต่อ API ไม่สำเร็จ';
     }
   };
+  const registrationForm = $('#registration-form');
+  const wizardSteps = [...registrationForm.querySelectorAll('.wizard-step')];
+  const stepIndicators = [...document.querySelectorAll('[data-step-indicator]')];
+  let currentStep = 1;
+  const summaryLabels = { year: 'ปีการศึกษา', band: 'สายการศึกษา', level: 'ระดับธรรมศึกษา', studentNumber: 'เลขประจำตัวนักเรียน', fullName: 'ชื่อ-นามสกุล' };
+  const selectedText = (name) => registrationForm.elements[name]?.selectedOptions?.[0]?.textContent || registrationForm.elements[name]?.value || '';
+  const updateSummary = () => {
+    const values = {
+      year: selectedText('year'), band: selectedText('band'), level: selectedText('level'),
+      studentNumber: registrationForm.elements.studentNumber.value.trim(), fullName: registrationForm.elements.fullName.value.trim(),
+    };
+    $('#registration-summary').innerHTML = Object.entries(values).map(([key, value]) =>
+      `<div class="summary-row"><span>${summaryLabels[key]}</span><strong>${escapeHtml(value || '—')}</strong></div>`
+    ).join('');
+  };
+  const setWizardStep = (step) => {
+    currentStep = step;
+    wizardSteps.forEach((section) => { const active = Number(section.dataset.step) === step; section.hidden = !active; section.classList.toggle('active', active); });
+    stepIndicators.forEach((indicator) => indicator.classList.toggle('active', Number(indicator.dataset.stepIndicator) <= step));
+    if (step === 3) updateSummary();
+  };
+  registrationForm.querySelectorAll('.wizard-next').forEach((button) => button.addEventListener('click', () => {
+    const section = wizardSteps[currentStep - 1];
+    const invalid = [...section.querySelectorAll('[required]')].find((field) => !field.checkValidity());
+    if (invalid) { invalid.reportValidity(); return; }
+    if (currentStep === 2) {
+      const preview = $('#identity-preview');
+      preview.hidden = false;
+      preview.textContent = 'ข้อมูลจะถูกตรวจสอบกับทะเบียนโรงเรียนอีกครั้งเมื่อกดส่งใบสมัคร';
+    }
+    setWizardStep(Math.min(currentStep + 1, 3));
+  }));
+  registrationForm.querySelectorAll('.wizard-back').forEach((button) => button.addEventListener('click', () => setWizardStep(Math.max(currentStep - 1, 1))));
   $('#registration-form').addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (!event.currentTarget.checkValidity()) { event.currentTarget.reportValidity(); return; }
     const message = $('#registration-message');
     if (!apiBase || !apiHeaders) {
       message.textContent = 'ขณะนี้ยังไม่เปิดรับสมัครจริง ระบบจะเปิดให้บันทึกเมื่อเจ้าหน้าที่ประกาศช่วงรับสมัครและเชื่อม API ครบแล้ว';

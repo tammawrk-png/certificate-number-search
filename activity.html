@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f766e" />
     <meta name="description" content="ระบบกิจกรรมธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา" />
     <title>ระบบกิจกรรมธรรมศึกษา</title>
-    <link rel="stylesheet" href="activity.css?v=20260913-2" />
+    <link rel="stylesheet" href="activity.css?v=20260913-4" />
   </head>
   <body>
     <main class="activity-shell">
@@ -36,15 +36,39 @@
       </section>
 
       <section id="register" class="panel">
-        <div class="panel-heading"><div><span class="kicker">Registration</span><h2>รับสมัครสอบ</h2></div><span class="state pending">เตรียมเปิดรับสมัคร</span></div>
-        <form id="registration-form" class="form-grid">
-          <label>ปีการศึกษา<select name="year" required><option value="2569">2569</option></select></label>
-          <label>สายการศึกษา<select name="band" required><option value="lower_secondary">มัธยมศึกษาตอนต้น</option><option value="upper_secondary">มัธยมศึกษาตอนปลาย</option><option value="higher_education">อุดมศึกษา</option></select></label>
-          <label>ระดับธรรมศึกษา<select name="level" required><option value="ตรี">ชั้นตรี</option><option value="โท">ชั้นโท</option><option value="เอก">ชั้นเอก</option></select></label>
-          <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" required placeholder="กรอกเลขประจำตัว" /></label>
-          <label>ชื่อ-นามสกุล<input name="fullName" required placeholder="กรอกชื่อและนามสกุล" /></label>
-          <label class="check-field"><input name="consent" type="checkbox" required /> ยืนยันว่าข้อมูลถูกต้อง</label>
-          <button class="primary" type="submit">บันทึกใบสมัคร</button>
+        <div class="panel-heading registration-heading"><div><span class="kicker">สมัครสอบออนไลน์</span><h2>สมัครง่าย ไม่ต้องสร้างบัญชี</h2><p class="panel-lead">ใช้เลขประจำตัวนักเรียนเพื่อดึงข้อมูลจากทะเบียนโรงเรียน แล้วตรวจสอบก่อนส่งใบสมัคร</p></div><span class="state pending">เตรียมเปิดรับสมัคร</span></div>
+        <div class="registration-benefits" aria-label="จุดเด่นการสมัคร">
+          <span><b>01</b> กรอกสั้น</span><span><b>02</b> ตรวจข้อมูลก่อนส่ง</span><span><b>03</b> ไม่ต้องจำรหัสผ่าน</span>
+        </div>
+        <div class="stepper" aria-label="ลำดับการสมัคร">
+          <div class="step active" data-step-indicator="1"><b>1</b><span>ข้อมูลสอบ</span></div><i></i><div class="step" data-step-indicator="2"><b>2</b><span>ยืนยันตัวตน</span></div><i></i><div class="step" data-step-indicator="3"><b>3</b><span>ตรวจและส่ง</span></div>
+        </div>
+        <form id="registration-form" class="registration-wizard">
+          <section class="wizard-step active" data-step="1">
+            <div class="step-title"><span class="step-icon">✦</span><div><span class="kicker">ขั้นที่ 1 จาก 3</span><h3>เลือกข้อมูลการสอบ</h3></div></div>
+            <div class="form-grid">
+              <label>ปีการศึกษา<select name="year" required><option value="2569">2569</option></select></label>
+              <label>สายการศึกษา<select name="band" required><option value="lower_secondary">มัธยมศึกษาตอนต้น</option><option value="upper_secondary">มัธยมศึกษาตอนปลาย</option><option value="higher_education">อุดมศึกษา</option></select></label>
+              <label class="level-choice">ระดับธรรมศึกษา<select name="level" required><option value="ตรี">ชั้นตรี</option><option value="โท">ชั้นโท</option><option value="เอก">ชั้นเอก</option></select><small>ม.1 และ ม.4 ต้องสมัครชั้นตรี ส่วนชั้นต่อไปสมัครได้ตามความสมัครใจ</small></label>
+            </div>
+            <button class="primary wizard-next" type="button">ถัดไป <span>→</span></button>
+          </section>
+          <section class="wizard-step" data-step="2" hidden>
+            <div class="step-title"><span class="step-icon">⌕</span><div><span class="kicker">ขั้นที่ 2 จาก 3</span><h3>ยืนยันว่าเป็นใคร</h3></div></div>
+            <div class="identity-tip"><strong>ไม่ต้องเข้าสู่ระบบ</strong><span>กรอกเลขประจำตัวและชื่อให้ตรงกับทะเบียนนักเรียน ระบบจะแยกข้อมูลตามชั้นและห้องให้อัตโนมัติ</span></div>
+            <div class="form-grid identity-grid">
+              <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="เช่น 12345" /></label>
+              <label>ชื่อ-นามสกุล<input name="fullName" autocomplete="name" required placeholder="เช่น เด็กชายสมชาย ใจดี" /></label>
+            </div>
+            <div id="identity-preview" class="identity-preview" hidden></div>
+            <div class="wizard-actions"><button class="secondary wizard-back" type="button">← ย้อนกลับ</button><button class="primary wizard-next" type="button">ตรวจข้อมูล <span>→</span></button></div>
+          </section>
+          <section class="wizard-step" data-step="3" hidden>
+            <div class="step-title"><span class="step-icon">✓</span><div><span class="kicker">ขั้นที่ 3 จาก 3</span><h3>ตรวจสอบก่อนส่ง</h3></div></div>
+            <div class="summary-card" id="registration-summary"></div>
+            <label class="check-field"><input name="consent" type="checkbox" required /> ยืนยันว่าข้อมูลถูกต้อง และยินยอมให้ใช้ข้อมูลเพื่อการสมัครสอบธรรมศึกษา</label>
+            <div class="wizard-actions"><button class="secondary wizard-back" type="button">← แก้ไขข้อมูล</button><button class="primary" type="submit">ส่งใบสมัคร <span>✓</span></button></div>
+          </section>
         </form>
         <p id="registration-message" class="form-message" role="status"></p>
       </section>
@@ -61,6 +85,6 @@
       </section>
       <footer><span>งานธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา</span><span>ระบบกิจกรรมรุ่นเริ่มต้น</span></footer>
     </main>
-    <script src="config.js?v=20260913-activity-2"></script><script src="activity.js?v=20260913-3"></script>
+    <script src="config.js?v=20260913-activity-2"></script><script src="activity.js?v=20260913-4"></script>
   </body>
 </html>
