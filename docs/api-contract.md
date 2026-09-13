@@ -6,6 +6,12 @@
 
 `academic-years`, `teachers`, `classrooms`, `students`, `legacy-certificates`, `certificate-matches`, `exam-registrations`, `exam-eligibility`, `exam-rooms`, `exam-seats`, `exam-results`, `import-batches`
 
+## Staff report RPCs
+
+- `school_report_rows(year)` returns the school tracking rows with grade, room, advisor(s), matching, registration, official eligibility, seat, result, and follow-up state.
+- `mother_sangha_report_rows(year, level)` returns one level at a time for filling a copy of the unchanged Mother Sangha workbook.
+- Both RPCs require Supabase Auth plus an active `staff_roles` row. They are never exposed to `anon`.
+
 ## ข้อกำหนด
 
 - ทุก list endpoint รองรับ pagination, search และ filter ตามปี/ระดับ/สถานะ
