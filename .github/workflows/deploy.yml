@@ -31,6 +31,16 @@ jobs:
         env:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: node scripts/prepare-public-config.mjs config.js
+      - name: Verify Supabase live API when configured
+        env:
+          SUPABASE_URL: https://jmlcsrmrtghmnpdpfdcf.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "Supabase live smoke skipped: publishable key secret is not configured"
+          else
+            node scripts/supabase-live-smoke.mjs
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -10,6 +10,7 @@ const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config] = await
   readFile(new URL('../config.js', import.meta.url), 'utf8'),
 ]);
 const configBuilder = await readFile(new URL('../scripts/prepare-public-config.mjs', import.meta.url), 'utf8');
+const deployWorkflow = await readFile(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
 const migration11 = await readFile(new URL('../supabase/migrations/0011_refresh_certificate_matches.sql', import.meta.url), 'utf8');
 const migration12 = await readFile(new URL('../supabase/migrations/0012_student_progress_guidance.sql', import.meta.url), 'utf8');
 const migration15 = await readFile(new URL('../supabase/migrations/0015_staff_report_rows.sql', import.meta.url), 'utf8');
@@ -63,5 +64,8 @@ assert.doesNotMatch(config, /(?:service[-_ ]role|client_secret|private_key)\s*[:
 assert.match(config, /publishableKey\s*:/);
 assert.match(configBuilder, /SUPABASE_PUBLISHABLE_KEY/);
 assert.match(configBuilder, /Refusing a secret-looking Supabase key/);
+assert.match(deployWorkflow, /Verify Supabase live API when configured/);
+assert.match(deployWorkflow, /node scripts\/supabase-live-smoke\.mjs/);
+assert.match(deployWorkflow, /Supabase live smoke skipped/);
 
 console.log('public surface smoke test passed');
