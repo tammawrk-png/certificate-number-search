@@ -1,6 +1,74 @@
 -- Staff report guidance from the current roster plus reviewed legacy matches.
 -- Historical Firebase records do not contain lower/upper-secondary context,
 -- so the result is guidance for review, never an automatic registration.
+create table if not exists public.staff_roles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null check (role in ('admin', 'coordinator', 'reviewer', 'advisor')),
+  display_name text,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table public.staff_roles enable row level security;
+
+create or replace function public.is_staff()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.staff_roles
+    where user_id = auth.uid() and active
+  );
+$$;
+
+revoke all on function public.is_staff() from public;
+grant execute on function public.is_staff() to authenticated;
+
+create or replace function public.refresh_certificate_matches_staff()
+returns table (auto_matched bigint, review_candidates bigint, unmatched_students bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_staff() then
+    raise exception 'STAFF_ROLE_REQUIRED';
+  end if;
+
+  with candidates as (
+    select s.id as student_id, lc.id as legacy_certificate_id,
+           count(*) over (partition by s.id) as candidate_count
+    from students s
+    join legacy_certificates lc on lc.normalized_name = s.normalized_name
+    where s.status = 'active'
+  )
+  insert into certificate_matches (student_id, legacy_certificate_id, status, confidence, matching_basis)
+  select student_id, legacy_certificate_id,
+         case when candidate_count = 1 then 'auto_matched' else 'review' end,
+         case when candidate_count = 1 then 1.0000 else 0.7500 end,
+         jsonb_build_object(
+           'basis', case when candidate_count = 1 then 'exact_normalized_full_name' else 'exact_name_multiple_legacy_records' end,
+           'candidate_count', candidate_count
+         )
+  from candidates
+  on conflict (student_id, legacy_certificate_id) do nothing;
+
+  return query
+  select
+    (select count(*) from certificate_matches where status = 'auto_matched'),
+    (select count(*) from certificate_matches where status = 'review'),
+    (select count(*) from students s
+      where s.status = 'active'
+        and not exists (select 1 from certificate_matches cm where cm.student_id = s.id));
+end;
+$$;
+
+revoke all on function public.refresh_certificate_matches_staff() from public;
+grant execute on function public.refresh_certificate_matches_staff() to authenticated;
+
 create or replace function public.student_progress_guidance(requested_year text)
 returns table (
   student_id uuid,
@@ -92,6 +160,7 @@ as $$
       else 'เป็นคำแนะนำจากประวัติเดิม ต้องยืนยันกับเจ้าหน้าที่ก่อนส่งรายงาน'
     end
   from shaped s
+  where public.is_staff()
   order by s.education_band, s.grade_level, s.room_no, s.student_number;
 $$;
 
@@ -100,3 +169,6 @@ grant execute on function public.student_progress_guidance(text) to authenticate
 
 comment on function public.student_progress_guidance(text) is
   'Staff-only guidance report. Lower and upper secondary are separate; ambiguous historical matches remain review_required.';
+
+comment on function public.refresh_certificate_matches_staff() is
+  'Staff-only idempotent exact-name match pass; ambiguous names require human review.';

@@ -36,7 +36,7 @@ end;
 $$;
 
 revoke all on function public.refresh_certificate_matches() from public;
-grant execute on function public.refresh_certificate_matches() to authenticated;
+-- Execution is granted only through the staff-guarded successor in 0012.
 
 comment on function public.refresh_certificate_matches() is
   'Idempotent exact-name match pass. Ambiguous names require human review; Firebase is never modified.';
