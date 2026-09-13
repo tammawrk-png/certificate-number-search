@@ -16,7 +16,7 @@
 ## Public registration preflight
 
 - `public_student_registration_options(year, student_number, full_name)` verifies an exact current-roster identity before the final submit step.
-- The response supplies the server-owned education band, grade, room, advisor(s), and non-binding historical progression guidance. It does not return raw certificate rows.
+- The response supplies the server-owned education band, grade, room, advisor(s), and non-binding historical progression guidance, including whether an ambiguous historical match needs staff review. It does not return raw certificate rows.
 - If no exact identity is found, the RPC returns no row and the page must keep the user on the identity step.
 - `submit_public_registration_v2(...)` remains the final authority: it rechecks the identity, registration window, band, and year-specific rule at write time.
 

@@ -85,7 +85,7 @@
   let currentStep = 1;
   const summaryLabels = { year: 'ปีการศึกษา', band: 'สายการศึกษา', level: 'ระดับธรรมศึกษา', studentNumber: 'เลขประจำตัวนักเรียน', fullName: 'ชื่อ-นามสกุล' };
   const bandLabels = { lower_secondary: 'มัธยมศึกษาตอนต้น', upper_secondary: 'มัธยมศึกษาตอนปลาย', higher_education: 'อุดมศึกษา' };
-  const guidanceLabels = { required: 'ต้องสมัครชั้นตรีตามเกณฑ์ชั้นเริ่มต้น', suggested: 'แนะนำระดับถัดไปจากประวัติเดิม', completed: 'พบประวัติชั้นเอกแล้ว ไม่บังคับสมัครต่อ', unmatched: 'ยังไม่พบประวัติที่จับคู่ได้' };
+  const guidanceLabels = { required: 'ต้องสมัครชั้นตรีตามเกณฑ์ชั้นเริ่มต้น', suggested: 'แนะนำระดับถัดไปจากประวัติเดิม', completed: 'พบประวัติชั้นเอกแล้ว ไม่บังคับสมัครต่อ', unmatched: 'ยังไม่พบประวัติที่จับคู่ได้', review_required: 'พบประวัติชื่อซ้ำ รอเจ้าหน้าที่ตรวจสอบ' };
   const selectedText = (name) => registrationForm.elements[name]?.selectedOptions?.[0]?.textContent || registrationForm.elements[name]?.value || '';
   const updateSummary = () => {
     const values = {
@@ -139,7 +139,9 @@
       registrationForm.elements.band.value = row.education_band;
       if (row.required_level) registrationForm.elements.level.value = row.required_level;
       const advisors = [row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล';
-      const recommendation = row.recommended_level ? `ระดับที่ระบบแนะนำ: ${row.recommended_level}` : 'ไม่มีระดับต่อเนื่องที่ต้องสมัคร';
+      const recommendation = row.guidance_status === 'review_required'
+        ? 'ประวัติเดิมมีรายการชื่อซ้ำ เจ้าหน้าที่จะตรวจสอบก่อนใช้เป็นคำแนะนำ'
+        : (row.recommended_level ? `ระดับที่ระบบแนะนำ: ${row.recommended_level}` : 'ไม่มีระดับต่อเนื่องที่ต้องสมัคร');
       preview.classList.remove('error');
       preview.innerHTML = `<strong>ยืนยันทะเบียนแล้ว</strong><div class="preview-grid">` +
         `<span>สาย/ชั้น</span><b>${escapeHtml(bandLabels[row.education_band] || row.education_band)} · ม.${escapeHtml(row.grade_level)}</b>` +
