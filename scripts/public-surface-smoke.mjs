@@ -30,6 +30,8 @@ assert.match(staffHtml, /id="login-form"/);
 assert.match(staffHtml, /id="workspace"/);
 assert.match(staffJs, /school_report_rows/);
 assert.match(staffJs, /mother_sangha_report_rows/);
+assert.match(staffJs, /certificate_match_review_rows/);
+assert.match(staffJs, /review_certificate_match/);
 assert.match(staffJs, /sessionStorage/);
 assert.doesNotMatch(migration11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
 assert.match(migration12, /create table if not exists public\.staff_roles/);

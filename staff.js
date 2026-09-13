@@ -3,7 +3,7 @@
   const config = window.APP_CONFIG?.supabase;
   const apiBase = config?.url?.replace(/\/$/, '');
   let accessToken = sessionStorage.getItem('dharma_staff_access_token') || '';
-  let loadedReports = { school: [], ตรี: [], โท: [], เอก: [] };
+  let loadedReports = { school: [], match: [], ตรี: [], โท: [], เอก: [] };
   const headers = () => ({ apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
   const setMessage = (text) => { $('#login-message').textContent = text; $('#report-message').textContent = text; };
   const showWorkspace = (visible) => { $('#login-panel').hidden = visible; $('#workspace').hidden = !visible; };
@@ -20,12 +20,23 @@
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
   };
-  const renderTable = (rows, title) => {
+  const escapeHtml = (value) => String(value ?? '—').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const renderTable = (rows, title, actions = false) => {
     const head = $('#report-head'); const body = $('#report-body'); $('#table-title').textContent = title; $('#row-count').textContent = `${rows.length.toLocaleString('th-TH')} รายการ`;
     if (!rows.length) { head.innerHTML = ''; body.innerHTML = '<tr><td class="empty" colspan="8">ไม่พบข้อมูลสำหรับรายงานนี้</td></tr>'; return; }
     const columns = Object.keys(rows[0]);
-    head.innerHTML = `<tr>${columns.map((column) => `<th>${column}</th>`).join('')}</tr>`;
-    body.innerHTML = rows.slice(0, 100).map((row) => `<tr>${columns.map((column) => `<td>${String(row[column] ?? '—').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</td>`).join('')}</tr>`).join('');
+    head.innerHTML = `<tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}${actions ? '<th>การตัดสิน</th>' : ''}</tr>`;
+    body.innerHTML = rows.slice(0, 100).map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column])}</td>`).join('')}${actions ? `<td class="review-actions"><button class="mini-button confirm" data-match-id="${escapeHtml(row.match_id)}" data-decision="confirmed">ยืนยัน</button><button class="mini-button reject" data-match-id="${escapeHtml(row.match_id)}" data-decision="rejected">ปฏิเสธ</button></td>` : ''}</tr>`).join('');
+  };
+  const loadMatchReview = async () => {
+    const year = $('#report-year').value; $('#load-match-review').disabled = true; setMessage('กำลังโหลดคิวจับคู่…');
+    try {
+      const match = await rpc('certificate_match_review_rows', { requested_year: year });
+      loadedReports.match = match;
+      renderTable(match, `คิวตรวจจับคู่ชื่อซ้ำ · ปี ${year}`, true);
+      setMessage(`พบรายการรอตรวจ ${match.length.toLocaleString('th-TH')} รายการ`);
+    } catch (error) { console.warn(error); setMessage('โหลดคิวจับคู่ไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    finally { $('#load-match-review').disabled = false; }
   };
   const rpc = async (name, body) => {
     const response = await fetch(`${apiBase}/rest/v1/rpc/${name}`, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
@@ -58,6 +69,16 @@
     } catch (error) { console.warn(error); setMessage('ส่งลิงก์ไม่สำเร็จ กรุณาตรวจสอบอีเมลหรือการตั้งค่า Supabase Auth'); }
   });
   $('#load-report').addEventListener('click', loadReports);
+  $('#load-match-review').addEventListener('click', loadMatchReview);
+  $('#report-body').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-match-id]');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await rpc('review_certificate_match', { requested_match_id: button.dataset.matchId, requested_decision: button.dataset.decision });
+      await loadMatchReview();
+    } catch (error) { console.warn(error); setMessage('บันทึกการตัดสินไม่สำเร็จ กรุณาตรวจสอบสิทธิ์หรือรายการซ้ำ'); button.disabled = false; }
+  });
   document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => downloadCsv(`dharma-${button.dataset.report}-${$('#report-year').value}.csv`, loadedReports[button.dataset.report] || [])));
   $('#sign-out').addEventListener('click', () => { sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false); });
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
