@@ -153,19 +153,25 @@
         ? 'ประวัติเดิมมีรายการชื่อซ้ำ เจ้าหน้าที่จะตรวจสอบก่อนใช้เป็นคำแนะนำ'
         : (row.recommended_level ? `ระดับที่ระบบแนะนำ: ${row.recommended_level}` : 'ไม่มีระดับต่อเนื่องที่ต้องสมัคร');
       preview.classList.remove('error');
-      preview.innerHTML = `<strong>พบข้อมูลนี้ในทะเบียน — โปรดตรวจสอบก่อนยืนยัน</strong><div class="preview-name">${escapeHtml(row.title || '')}${escapeHtml(row.full_name)}</div><div class="preview-grid">` +
+      preview.innerHTML = `<strong>พบข้อมูลของคุณจากเลขประจำตัว — โปรดตรวจสอบ</strong><div class="preview-name">${escapeHtml(row.title || '')}${escapeHtml(row.full_name)}</div><div class="preview-grid">` +
         `<span>สาย/ชั้น</span><b>${escapeHtml(bandLabels[row.education_band] || row.education_band)} · ม.${escapeHtml(row.grade_level)}</b>` +
         `<span>ห้อง</span><b>ห้อง ${escapeHtml(row.room_no)}</b>` +
         `<span>ครูที่ปรึกษา</span><b>${escapeHtml(advisors)}</b>` +
         `<span>ประวัติเดิม</span><b>${escapeHtml(row.highest_legacy_level || 'ยังไม่พบ')} · ${escapeHtml(guidanceLabels[row.guidance_status] || '')}</b>` +
-        `</div><small>${escapeHtml(recommendation)} — <a href="index.html">เปิดค้นเลขใบประกาศเดิม</a> · หากชื่อไม่ตรง กด “ข้อมูลไม่ตรง” เพื่อส่งคำขอแก้ไขให้เจ้าหน้าที่</small><button id="show-correction" class="secondary" type="button">ข้อมูลไม่ตรง / ขอแก้ไข</button>`;
-      $('#show-correction').addEventListener('click', () => {
-        const panel = $('#correction-panel'); panel.hidden = false;
-        registrationForm.elements.correctionTitle.value = row.title || (Number(row.grade_level) <= 3 ? 'เด็กชาย' : 'นาย');
-        registrationForm.elements.correctionFirstName.value = row.first_name || '';
-        registrationForm.elements.correctionLastName.value = row.last_name || '';
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        `</div><small>${escapeHtml(recommendation)} · ประวัติใบประกาศจะแสดงด้านล่าง หากไม่สอบต่อไม่ต้องยืนยันหรือสมัคร</small>`;
+      const identityResponse = await fetch(`${apiBase}/rest/v1/rpc/public_student_identity`, {
+        method: 'POST', headers: apiHeaders,
+        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }),
       });
+      const identityRows = identityResponse.ok ? await identityResponse.json() : [];
+      const identity = Array.isArray(identityRows) ? identityRows[0] : identityRows;
+      const editPanel = $('#self-edit-panel');
+      editPanel.hidden = false;
+      registrationForm.elements.selfTitle.value = identity?.title || row.title || (Number(row.grade_level) <= 3 ? 'เด็กชาย' : 'นาย');
+      registrationForm.elements.selfFirstName.value = identity?.first_name || row.first_name || '';
+      registrationForm.elements.selfLastName.value = identity?.last_name || row.last_name || '';
+      registrationForm.elements.selfCitizenId.value = identity?.citizen_id || '';
+      registrationForm.elements.selfBirthDate.value = identity?.birth_date_be || '';
       await loadCertificateAlerts(studentNumber);
       return true;
     } catch (error) {
@@ -190,37 +196,37 @@
       if (!rows.length) return;
       node.hidden = false;
       node.innerHTML = `<strong>ประวัติใบประกาศเดิม</strong><p>ระบบพบรายการที่เกี่ยวข้องกับเลขประจำตัวนี้ กรุณาตรวจสอบสถานะรับใบประกาศ</p>` + rows.map((row) =>
-        `<div class="certificate-row"><b>ชั้น${escapeHtml(row.dhamma_level)} · ปี ${escapeHtml(row.exam_year_be || 'ไม่ระบุ')}</b><span>ใบประกาศเลขที่ ${escapeHtml(row.certificate_no || 'รอข้อมูล')}</span><span>ปัจจุบัน: ม.${escapeHtml(row.grade_level)} ห้อง ${escapeHtml(row.room_no)} · ครูที่ปรึกษา ${escapeHtml([row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล')}</span><small>${escapeHtml(row.pickup_message)}</small></div>`).join('');
+        `<div class="certificate-row"><b>ชั้น${escapeHtml(row.dhamma_level)} · ปี ${escapeHtml(row.exam_year_be || 'ไม่ระบุ')}</b><span>ใบประกาศเลขที่ ${escapeHtml(row.certificate_no || 'รอข้อมูล')}</span><span>ชื่อในประวัติเดิม: ${escapeHtml(row.legacy_full_name || 'ไม่ระบุ')}</span><span>ปัจจุบัน: ม.${escapeHtml(row.grade_level)} ห้อง ${escapeHtml(row.room_no)} · ครูที่ปรึกษา ${escapeHtml([row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล')}</span><small>${escapeHtml(row.pickup_message)}</small></div>`).join('');
     } catch (error) { console.warn(error); }
   };
   registrationForm.elements.studentNumber.addEventListener('input', () => {
     verifiedStudent = null;
     $('#identity-preview').hidden = true;
     $('#certificate-alert').hidden = true;
-    $('#correction-panel').hidden = true;
+    $('#self-edit-panel').hidden = true;
   });
-  $('#submit-correction').addEventListener('click', async (event) => {
-    const panel = $('#correction-panel');
-    const first = registrationForm.elements.correctionFirstName.value.trim();
-    const last = registrationForm.elements.correctionLastName.value.trim();
-    if (!first || !last) { registrationForm.elements.correctionFirstName.reportValidity(); registrationForm.elements.correctionLastName.reportValidity(); return; }
+  $('#save-self-data').addEventListener('click', async (event) => {
+    const panel = $('#self-edit-panel');
+    const first = registrationForm.elements.selfFirstName.value.trim();
+    const last = registrationForm.elements.selfLastName.value.trim();
+    if (!first || !last) { registrationForm.elements.selfFirstName.reportValidity(); registrationForm.elements.selfLastName.reportValidity(); return; }
     event.currentTarget.disabled = true;
     try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_submit_student_correction`, { method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: registrationForm.elements.studentNumber.value.trim(), requested_title: registrationForm.elements.correctionTitle.value, requested_first_name: first, requested_last_name: last, requested_reason: registrationForm.elements.correctionReason.value.trim() }) });
-      if (!response.ok) throw new Error(`correction request failed: ${response.status}`);
+      const response = await fetch(`${apiBase}/rest/v1/rpc/public_update_student_self`, { method: 'POST', headers: apiHeaders,
+        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: registrationForm.elements.studentNumber.value.trim(), current_full_name: verifiedStudent?.full_name, requested_title: registrationForm.elements.selfTitle.value, requested_first_name: first, requested_last_name: last, requested_citizen_id: registrationForm.elements.selfCitizenId.value.trim(), requested_birth_date_be: registrationForm.elements.selfBirthDate.value.trim() }) });
+      if (!response.ok) throw new Error(`self update failed: ${response.status}`);
       const rows = await response.json();
       const result = Array.isArray(rows) ? rows[0] : rows;
-      $('#registration-message').textContent = result?.message || 'ส่งคำขอแล้ว';
-      panel.hidden = true;
-    } catch (error) { console.warn(error); $('#registration-message').textContent = 'ส่งคำขอแก้ไขไม่สำเร็จ กรุณาลองใหม่ภายหลัง'; }
+      $('#registration-message').textContent = result?.message || 'บันทึกข้อมูลแล้ว';
+      if (result?.saved) { verifiedStudent.full_name = [registrationForm.elements.selfTitle.value, first, last].filter(Boolean).join(' '); panel.hidden = true; }
+    } catch (error) { console.warn(error); $('#registration-message').textContent = 'บันทึกข้อมูลไม่สำเร็จ กรุณาตรวจรูปแบบข้อมูลแล้วลองใหม่'; }
     finally { event.currentTarget.disabled = false; }
   });
   registrationForm.querySelectorAll('.wizard-next').forEach((button) => button.addEventListener('click', async () => {
     const section = wizardSteps[currentStep - 1];
     const invalid = [...section.querySelectorAll('[required]')].find((field) => !field.checkValidity());
     if (invalid) { invalid.reportValidity(); return; }
-    if (currentStep === 2) {
+    if (currentStep === 1) {
       button.disabled = true;
       try {
         if (!(await verifyStudent())) return;

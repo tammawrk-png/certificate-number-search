@@ -49,13 +49,13 @@
       </section>
 
       <section id="register" class="panel">
-        <div class="panel-heading registration-heading"><div><span class="kicker">สมัครสอบออนไลน์</span><h2>ข้อมูลของคุณจะถูกแยกอย่างไร?</h2><p class="panel-lead">ระบบใช้เลขประจำตัวนักเรียนเป็นกุญแจหลัก แล้วจับคู่กับชื่อในทะเบียน จึงไม่ต้องเข้าสู่ระบบและไม่ต้องกรอกชั้นหรือห้องเอง</p></div><span id="registration-state" class="state pending">กำลังตรวจสอบช่วงรับสมัคร</span></div>
+        <div class="panel-heading registration-heading"><div><span class="kicker">ตรวจประวัติและสมัครสอบ</span><h2>ตรวจข้อมูลก่อนเลือกสมัคร</h2><p class="panel-lead">เริ่มจากเลขประจำตัวเพื่อดูประวัติใบประกาศและระดับที่ควรสมัครก่อน จากนั้นตรวจและบันทึกข้อมูลของตัวเองได้ทันที</p></div><span id="registration-state" class="state pending">กำลังตรวจสอบช่วงรับสมัคร</span></div>
         <div class="registration-benefits" aria-label="จุดเด่นการสมัคร">
           <span><b>01</b> กรอกสั้น</span><span><b>02</b> ตรวจข้อมูลก่อนส่ง</span><span><b>03</b> ไม่ต้องจำรหัสผ่าน</span>
         </div>
         <div class="optional-note"><strong>ไม่สอบต่อไม่ต้องสมัคร</strong><span>นักเรียนที่ยังไม่ประสงค์สอบต่อ ไม่ต้องเข้ามายืนยันหรือกรอกแบบฟอร์ม ระบบจะติดตามเฉพาะผู้สมัคร ส่วน ม.1 และ ม.4 ที่เป็นชั้นเริ่มต้นต้องสมัครชั้นตรีตามเกณฑ์โรงเรียน</span></div>
         <div class="stepper" aria-label="ลำดับการสมัคร">
-          <div class="step active" data-step-indicator="1"><b>1</b><span>ข้อมูลสอบ</span></div><i></i><div class="step" data-step-indicator="2"><b>2</b><span>ยืนยันตัวตน</span></div><i></i><div class="step" data-step-indicator="3"><b>3</b><span>ตรวจและส่ง</span></div>
+          <div class="step active" data-step-indicator="1"><b>1</b><span>ค้นประวัติ</span></div><i></i><div class="step" data-step-indicator="2"><b>2</b><span>ตรวจข้อมูล</span></div><i></i><div class="step" data-step-indicator="3"><b>3</b><span>เลือกสมัคร</span></div>
         </div>
         <form id="registration-form" class="registration-wizard">
           <input type="hidden" name="band" value="" />
@@ -63,26 +63,24 @@
             <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span><div><span class="kicker">ขั้นที่ 1 จาก 3</span><h3>เลือกข้อมูลการสอบ</h3></div></div>
             <div class="form-grid">
               <label>ปีการศึกษา<select name="year" required><option value="2569">2569</option></select></label>
-              <label class="level-choice">ระดับธรรมศึกษา<select name="level" required><option value="ตรี">ชั้นตรี</option><option value="โท">ชั้นโท</option><option value="เอก">ชั้นเอก</option></select><small>ม.1 และ ม.4 ต้องสมัครชั้นตรี ส่วนชั้นต่อไปสมัครได้ตามความสมัครใจ ระบบจะตรวจสายและชั้นจากทะเบียนให้อัตโนมัติ</small></label>
+              <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="กรอกเลขประจำตัวของคุณ" /><small class="field-help">ใช้สำหรับดูประวัติและยืนยันข้อมูลของคุณเท่านั้น ไม่ต้องกรอกชื่อ ชั้น หรือห้อง</small></label>
+              <label class="level-choice">ระดับที่จะสมัคร<select name="level" required><option value="ตรี">ชั้นตรี</option><option value="โท">ชั้นโท</option><option value="เอก">ชั้นเอก</option></select><small>ระบบจะแนะนำระดับหลังตรวจประวัติ คุณเปลี่ยนได้ตามความประสงค์และเกณฑ์ที่ระบบแจ้ง</small></label>
             </div>
             <button class="primary wizard-next" type="button">ถัดไป</button>
           </section>
           <section class="wizard-step" data-step="2" hidden>
             <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 19c.7-3 2.7-4.5 6-4.5s5.3 1.5 6 4.5"/></svg></span><div><span class="kicker">ขั้นที่ 2 จาก 3</span><h3>ยืนยันว่าเป็นใคร</h3></div></div>
-            <div class="form-grid identity-grid">
-              <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="เช่น 12345" /><small class="field-help">ระบบจะแสดงชื่อ ชั้น ห้อง และครูที่ปรึกษาจากทะเบียนกลางหลังค้นหา</small></label>
-            </div>
             <div id="identity-preview" class="identity-preview" aria-live="polite" hidden></div>
-            <div id="certificate-alert" class="certificate-alert" aria-live="polite" hidden></div>
-            <div id="correction-panel" class="correction-panel" hidden>
-              <strong>ข้อมูลไม่ตรงใช่ไหม?</strong><p>กรอกข้อมูลที่ถูกต้อง ระบบจะส่งคำขอให้เจ้าหน้าที่ตรวจสอบก่อนปรับทะเบียน และจะแจ้งผลภายหลัง</p>
-              <div class="form-grid correction-grid"><label>คำนำหน้า<select name="correctionTitle"><option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option><option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option></select></label><label>ชื่อ<input name="correctionFirstName" autocomplete="given-name" /></label><label>นามสกุล<input name="correctionLastName" autocomplete="family-name" /></label><label>เหตุผล (ถ้ามี)<input name="correctionReason" /></label></div>
-              <button id="submit-correction" class="secondary" type="button">บันทึกข้อมูลและส่งให้เจ้าหน้าที่ตรวจสอบ</button>
+            <div id="certificate-alert" class="certificate-alert" aria-live="polite" hidden><strong>ประวัติใบประกาศเดิม</strong></div>
+            <div id="self-edit-panel" class="self-edit-panel" hidden>
+              <div><strong>ตรวจและแก้ไขข้อมูลของคุณ</strong><p>ข้อมูลจากทะเบียนจะแสดงให้ตรวจสอบ เลขประจำตัว ชั้น ห้อง และครูที่ปรึกษาเป็นข้อมูลระบบ แก้ไขจากหน้านี้ไม่ได้</p></div>
+              <div class="form-grid correction-grid"><label>คำนำหน้า<select name="selfTitle"><option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option><option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option></select></label><label>ชื่อ<input name="selfFirstName" autocomplete="given-name" required /></label><label>นามสกุล<input name="selfLastName" autocomplete="family-name" required /></label><label>เลขประจำตัวประชาชน<input name="selfCitizenId" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="13 หลัก (ถ้ามี)" /></label><label>วันเดือนปีเกิด (พ.ศ.)<input name="selfBirthDate" inputmode="numeric" placeholder="วว/ดด/ปปปป" /></label></div>
+              <button id="save-self-data" class="secondary" type="button">บันทึกข้อมูลของฉัน</button>
             </div>
             <div class="wizard-actions"><button class="secondary wizard-back" type="button">ย้อนกลับ</button><button class="primary wizard-next" type="button">ตรวจข้อมูล</button></div>
           </section>
           <section class="wizard-step" data-step="3" hidden>
-            <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><div><span class="kicker">ขั้นที่ 3 จาก 3</span><h3>ตรวจสอบก่อนส่ง</h3></div></div>
+            <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><div><span class="kicker">ขั้นที่ 3 จาก 3</span><h3>เลือกสมัครและตรวจสอบก่อนส่ง</h3></div></div>
             <div class="summary-card" id="registration-summary"></div>
             <label class="check-field"><input name="identityConfirmed" type="checkbox" required /> ยืนยันว่าข้อมูลทะเบียนที่แสดงเป็นของฉัน</label>
             <label class="check-field"><input name="consent" type="checkbox" required /> ยินยอมให้ใช้ข้อมูลเพื่อการสมัครสอบธรรมศึกษา</label>

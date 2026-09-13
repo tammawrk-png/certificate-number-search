@@ -6,10 +6,10 @@ import { join } from 'node:path';
 const root = new URL('../supabase/migrations/', import.meta.url);
 const rootPath = fileURLToPath(root);
 const names = (await readdir(rootPath)).filter((name) => name.endsWith('.sql')).sort();
-const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024'];
+const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025'];
 assert.deepEqual(names.map((name) => name.slice(0, 4)), expected);
 
-const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24] = await Promise.all([
+const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24, m25] = await Promise.all([
   readFile(join(rootPath, '0011_refresh_certificate_matches.sql'), 'utf8'),
   readFile(join(rootPath, '0012_student_progress_guidance.sql'), 'utf8'),
   readFile(join(rootPath, '0015_staff_report_rows.sql'), 'utf8'),
@@ -21,6 +21,7 @@ const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24] = await Promise.al
   readFile(join(rootPath, '0022_certificate_pickup_tracking.sql'), 'utf8'),
   readFile(join(rootPath, '0023_certificate_pickup_actions.sql'), 'utf8'),
   readFile(join(rootPath, '0024_registration_progression_guard.sql'), 'utf8'),
+  readFile(join(rootPath, '0025_public_identity_self_update.sql'), 'utf8'),
 ]);
 assert.doesNotMatch(m11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
 assert.match(m12, /staff_roles/);
@@ -54,5 +55,8 @@ assert.match(m24, /PREREQUISITE_NOT_MET/);
 assert.match(m24, /cm\.status in \('auto_matched', 'confirmed'\)/);
 assert.match(m24, /grant execute on function public\.submit_public_registration\(text, text, text, text, text\) to anon, authenticated/);
 assert.doesNotMatch(m24, /grant execute on function public\.submit_public_registration_v1[^;]+to anon/i);
+assert.match(m25, /add column if not exists citizen_id/);
+assert.match(m25, /public_student_identity/);
+assert.match(m25, /public_update_student_self/);
 
 console.log('migration contract test passed');

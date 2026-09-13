@@ -22,9 +22,12 @@
 - If no exact identity is found, the RPC returns no row and the page must keep the user on the identity step.
 - `submit_public_registration_v2(...)` remains the final authority: it rechecks the identity, registration window, band, and year-specific rule at write time. The server also requires a reviewed historical prerequisite for โท/เอก (ตรี before โท, โท before เอก); M.1 and M.4 remain governed by the required ตรี rule.
 
-### Identity correction
+### Identity review and self-update
 
-- `public_submit_student_correction(year, student_number, title, first_name, last_name, reason)` creates a pending correction request; it never edits the roster directly.
+- `public_student_identity(year, student_number)` returns the personal fields needed for self-review.
+- `public_update_student_self(year, student_number, current_full_name, title, first_name, last_name, citizen_id, birth_date_be)` validates the current name and saves personal fields immediately. Student number, class, room and advisors remain server-owned.
+- A self-update writes an audit log and moves existing automatic/confirmed certificate matches to `review`, so a changed name cannot silently keep an unverified match.
+- The old correction-request RPC remains for staff compatibility; the public UI no longer asks students to submit a correction request.
 - `student_correction_review_rows(year)` and `review_student_correction(correction_id, decision, note)` are staff-only. Approval updates the current roster, marks existing certificate matches for recheck, and writes an audit entry.
 
 ## ข้อกำหนด
