@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const run = promisify(execFile);
+const { stdout } = await run('git', ['ls-files', '-z']);
+const tracked = stdout.split('\0').filter(Boolean);
+const forbiddenNames = /(?:firebase-import|firebase-snapshot|service-account|credentials|private-key|roster-staging|match-review)\.(?:json|csv|xlsx?|sql)$/i;
+assert.equal(tracked.some((name) => forbiddenNames.test(name)), false, 'raw PII/import or credential artifact is tracked');
+
+const textFiles = tracked.filter((name) => !/\.(?:png|jpe?g|gif|ico|xls[xm]?|pdf|woff2?)$/i.test(name));
+for (const name of textFiles) {
+  const { stdout: content } = await run('git', ['show', `HEAD:${name}`]);
+  assert.doesNotMatch(content, /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/i, `private key found in ${name}`);
+  assert.doesNotMatch(content, /(?:SUPABASE_SERVICE_ROLE|service[_ -]?role\s*[:=]|client_secret\s*[:=])/i, `secret-looking value found in ${name}`);
+}
+
+assert.ok(tracked.includes('config.js'), 'public config must remain tracked for static hosting');
+assert.ok(tracked.includes('scripts/prepare-public-config.mjs'), 'deploy config injection must remain tracked');
+console.log(`repository safety test passed (${tracked.length} tracked files)`);

@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: 20
       - name: Run public surface, migration, and roster policy checks
-        run: node --test scripts/public-surface-smoke.mjs scripts/migration-contract.test.mjs scripts/roster-policy.test.mjs
+        run: node --test scripts/public-surface-smoke.mjs scripts/migration-contract.test.mjs scripts/roster-policy.test.mjs scripts/repository-safety.test.mjs
