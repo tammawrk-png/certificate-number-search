@@ -37,6 +37,7 @@ assert.match(activityJs, /public_update_student_self/);
 assert.match(activityJs, /public_student_registration_status/);
 assert.match(activityJs, /keepLevelLocked/);
 assert.match(activityJs, /levelSelect\.disabled = keepLevelLocked/);
+assert.match(activityJs, /guidance_status === 'suggested' && row\.recommended_level/);
 assert.match(activityJs, /public_student_certificate_alerts/);
 assert.doesNotMatch(activityHtml, /แก้ทะเบียนให้ทันที/);
 assert.match(activityHtml, /บันทึกข้อมูลของฉัน/);

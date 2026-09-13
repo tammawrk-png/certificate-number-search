@@ -151,6 +151,7 @@
       verifiedStudent = row;
       registrationForm.elements.band.value = row.education_band;
       if (row.required_level) registrationForm.elements.level.value = row.required_level;
+      else if (row.guidance_status === 'suggested' && row.recommended_level) registrationForm.elements.level.value = row.recommended_level;
       const levelSelect = registrationForm.elements.level;
       const levelHelp = $('#level-choice-help');
       const requiredChoice = Boolean(row.required_level);
