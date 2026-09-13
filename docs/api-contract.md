@@ -20,7 +20,7 @@
 - `public_student_lookup_options(year, student_number)` resolves one current-roster identity by student number before the final submit step.
 - The response supplies the server-owned education band, grade, room, advisor(s), and non-binding historical progression guidance, including whether an ambiguous historical match needs staff review. It does not return raw certificate rows.
 - If no exact identity is found, the RPC returns no row and the page must keep the user on the identity step.
-- `submit_public_registration_v2(...)` remains the final authority: it rechecks the identity, registration window, band, and year-specific rule at write time.
+- `submit_public_registration_v2(...)` remains the final authority: it rechecks the identity, registration window, band, and year-specific rule at write time. The server also requires a reviewed historical prerequisite for โท/เอก (ตรี before โท, โท before เอก); M.1 and M.4 remain governed by the required ตรี rule.
 
 ### Identity correction
 
