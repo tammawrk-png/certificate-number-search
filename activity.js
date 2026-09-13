@@ -44,6 +44,28 @@
       state.textContent = 'เชื่อมต่อ API ไม่สำเร็จ';
     }
   };
+  const loadRegistrationWindow = async () => {
+    const state = $('#registration-state');
+    if (!state || !apiBase || !apiHeaders) {
+      if (state) state.textContent = 'รอเชื่อมต่อ API สาธารณะ';
+      return;
+    }
+    try {
+      const response = await fetch(`${apiBase}/rest/v1/rpc/public_registration_window_status`, {
+        method: 'POST', headers: apiHeaders, body: JSON.stringify({ requested_year: '2569' }),
+      });
+      if (!response.ok) throw new Error(`registration window request failed: ${response.status}`);
+      const rows = await response.json();
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      if (!row) throw new Error('registration window response was empty');
+      state.classList.toggle('open', Boolean(row.is_open));
+      state.classList.toggle('pending', !row.is_open);
+      state.textContent = row.is_open ? 'เปิดรับสมัครแล้ว' : 'ยังไม่เปิดรับสมัคร';
+    } catch (error) {
+      console.warn(error);
+      state.textContent = 'ตรวจสอบช่วงรับสมัครไม่ได้';
+    }
+  };
   const registrationForm = $('#registration-form');
   const wizardSteps = [...registrationForm.querySelectorAll('.wizard-step')];
   const stepIndicators = [...document.querySelectorAll('[data-step-indicator]')];
@@ -154,4 +176,5 @@
     }
   });
   loadPublicMetrics();
+  loadRegistrationWindow();
 })();

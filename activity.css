@@ -50,6 +50,7 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .kicker { color: var(--purple); }
 .state { border-radius: 999px; padding: 7px 12px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
 .pending { color: #92400e; background: #fef3c7; }
+.state.open { color: #047857; background: #d1fae5; }
 .metric-grid, .report-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .metric { border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: linear-gradient(145deg, #fff, #fafaff); }
 .metric span, .metric small { display: block; color: var(--muted); }
