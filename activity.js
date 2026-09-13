@@ -98,7 +98,7 @@
     submitButton.disabled = true;
     message.textContent = 'กำลังตรวจสอบข้อมูล…';
     try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/submit_public_registration`, {
+      const response = await fetch(`${apiBase}/rest/v1/rpc/submit_public_registration_v2`, {
         method: 'POST', headers: apiHeaders,
         body: JSON.stringify({
           requested_year: form.get('year'),
@@ -111,7 +111,9 @@
       if (!response.ok) throw new Error(`registration request failed: ${response.status}`);
       const rows = await response.json();
       const result = Array.isArray(rows) ? rows[0] : rows;
-      message.textContent = result?.message || 'ระบบไม่สามารถยืนยันผลการสมัครได้';
+      message.textContent = result?.reference_code
+        ? `${result.message} เลขอ้างอิง ${result.reference_code}`
+        : (result?.message || 'ระบบไม่สามารถยืนยันผลการสมัครได้');
     } catch (error) {
       console.warn(error);
       message.textContent = 'เชื่อมต่อระบบรับสมัครไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
