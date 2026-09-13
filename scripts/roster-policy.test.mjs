@@ -9,6 +9,7 @@ assert.equal(isImportableRosterRow({ gradeLevel: 1, roomNo: 16 }), false);
 assert.equal(isImportableRosterRow({ gradeLevel: 4, roomNo: 12 }), true);
 assert.equal(isImportableRosterRow({ gradeLevel: 4, roomNo: 13 }), false);
 assert.equal(isImportableRosterRow({ gradeLevel: 2, roomNo: 2, status: 'left' }), false);
+assert.equal(isImportableRosterRow({ gradeLevel: 1, roomNo: '15.0' }), true);
 assert.equal(filterImportableRosterRows([
   { gradeLevel: 1, roomNo: 1 },
   { gradeLevel: 1, roomNo: 16 },
