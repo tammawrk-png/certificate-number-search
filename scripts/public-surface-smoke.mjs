@@ -9,6 +9,10 @@ const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config] = await
   readFile(new URL('../staff.js', import.meta.url), 'utf8'),
   readFile(new URL('../config.js', import.meta.url), 'utf8'),
 ]);
+const migration11 = await readFile(new URL('../supabase/migrations/0011_refresh_certificate_matches.sql', import.meta.url), 'utf8');
+const migration12 = await readFile(new URL('../supabase/migrations/0012_student_progress_guidance.sql', import.meta.url), 'utf8');
+const migration15 = await readFile(new URL('../supabase/migrations/0015_staff_report_rows.sql', import.meta.url), 'utf8');
+const migration16 = await readFile(new URL('../supabase/migrations/0016_enforce_room_policy.sql', import.meta.url), 'utf8');
 
 assert.match(legacyHtml, /firebase-database-compat\.js/);
 assert.match(legacyHtml, /app\.js/);
@@ -24,6 +28,11 @@ assert.match(staffHtml, /id="workspace"/);
 assert.match(staffJs, /school_report_rows/);
 assert.match(staffJs, /mother_sangha_report_rows/);
 assert.match(staffJs, /sessionStorage/);
+assert.doesNotMatch(migration11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
+assert.match(migration12, /create table if not exists public\.staff_roles/);
+assert.match(migration12, /public\.is_staff\(\)/);
+assert.doesNotMatch(migration15, /to anon/);
+assert.match(migration16, /room_no between 1 and 12/);
 assert.doesNotMatch(config, /(?:service[-_ ]role|client_secret|private_key)\s*[:=]/i);
 assert.match(config, /publishableKey\s*:/);
 
