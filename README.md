@@ -43,6 +43,16 @@ node --test scripts/public-surface-smoke.mjs scripts/migration-contract.test.mjs
 
 การ deploy ใช้ GitHub Pages ผ่าน `.github/workflows/deploy.yml` โดย `SUPABASE_PUBLISHABLE_KEY` ต้องอยู่ใน GitHub Actions secret เท่านั้น ระบบจะเติมค่าเฉพาะระหว่าง deploy
 
+เมื่อตั้งค่า Supabase แล้ว ให้ตรวจ API จริงโดยไม่เขียนข้อมูลด้วยคำสั่งนี้ (ห้ามใส่คีย์ในคำสั่งหรือไฟล์):
+
+```bash
+SUPABASE_URL="https://<project-ref>.supabase.co" \
+SUPABASE_PUBLISHABLE_KEY="<publishable-key>" \
+node scripts/supabase-live-smoke.mjs
+```
+
+สคริปต์เรียกเฉพาะ public RPC ด้วยค่าทดสอบที่ไม่ใช่ข้อมูลนักเรียน และไม่พิมพ์ response หรือคีย์ออกมา
+
 ## เอกสารหลัก
 
 - [`docs/architecture-and-rollout.md`](docs/architecture-and-rollout.md)

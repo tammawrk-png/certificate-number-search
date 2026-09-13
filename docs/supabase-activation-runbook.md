@@ -20,6 +20,16 @@
 
 ## ตรวจหลัง migration
 
+หลังตั้งค่า publishable key แล้ว ให้รัน live smoke test จากเครื่องที่ได้รับอนุญาต:
+
+```bash
+SUPABASE_URL="https://<project-ref>.supabase.co" \
+SUPABASE_PUBLISHABLE_KEY="<publishable-key>" \
+node scripts/supabase-live-smoke.mjs
+```
+
+ผลที่ผ่านต้องแสดง `ok` ครบ 4 RPC และ `Supabase live smoke test passed`; สคริปต์นี้เป็น read-only และไม่ส่งเลขประจำตัวจริง
+
 - ตรวจว่ามีปีการศึกษา 2569 หนึ่งแถว
 - ตรวจรายชื่อปัจจุบัน 3,155 คน, ห้อง 81 ห้อง และครูที่ปรึกษา 148 รายการจาก roster ที่ผ่าน policy
 - ตรวจว่าไม่มีห้อง 16 และไม่มีห้อง ม.ปลายเกิน 12
