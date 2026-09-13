@@ -35,16 +35,7 @@ def education_band(value: object) -> str:
     return "higher_education" if "อุดม" in text or "มหาวิทยาลัย" in text else "secondary"
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("snapshot", type=Path)
-    parser.add_argument("output_csv", type=Path)
-    args = parser.parse_args()
-    payload = json.loads(args.snapshot.read_text(encoding="utf-8"))
-    records = payload.get("certificates", payload)
-    if not isinstance(records, dict):
-        raise SystemExit("expected an object under certificates")
-
+def transform_records(records: dict) -> list[dict[str, str]]:
     rows = []
     for firebase_key, raw in records.items():
         if not isinstance(raw, dict):
@@ -63,8 +54,24 @@ def main() -> None:
             "level": level(raw.get("level")),
             "exam_year_be": str(raw.get("examYear") or "").strip(),
             "source_database": "firebase",
-            "source_payload": json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
+            "source_payload": raw,
         })
+    return rows
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("snapshot", type=Path)
+    parser.add_argument("output_csv", type=Path)
+    args = parser.parse_args()
+    payload = json.loads(args.snapshot.read_text(encoding="utf-8"))
+    records = payload.get("certificates", payload)
+    if not isinstance(records, dict):
+        raise SystemExit("expected an object under certificates")
+
+    rows = transform_records(records)
+    for row in rows:
+        row["source_payload"] = json.dumps(row["source_payload"], ensure_ascii=False, separators=(",", ":"))
 
     invalid = {
         "empty_names": sum(not row["normalized_name"] for row in rows),

@@ -63,6 +63,10 @@ python3 scripts/build-match-review.py <firebase-import.json> <roster_staging.csv
 พร้อมเก็บ `source_payload` เดิมไว้เป็นหลักฐาน การแปลงนี้ยังไม่ใช่การเขียนฐานข้อมูล
 และไฟล์ผลลัพธ์ต้องอยู่นอก repository เช่นเดียวกับไฟล์รายชื่อนักเรียน
 
+หากต้องนำเข้าผ่าน SQL Editor ให้ใช้ `scripts/build-legacy-import-sql.py` สร้างไฟล์ SQL
+จาก snapshot ที่ผ่าน validation แล้ว ไฟล์จะใช้ transaction และ upsert ด้วย `firebase_key`
+พร้อมบันทึก `import_batches`; ต้อง review จำนวนแถวก่อนรันทุกครั้ง และห้ามนำไฟล์ SQL ที่มี PII เข้า Git
+
 ## กติกาสมัครเบื้องต้น
 
 - ม.1 และ ม.4 ต้องมีรายการสมัครธรรมศึกษาชั้นตรี
