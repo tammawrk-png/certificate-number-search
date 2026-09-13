@@ -10,6 +10,7 @@
 
 - `school_report_rows(year)` returns the school tracking rows with grade, room, advisor(s), matching, registration, official eligibility, seat, result, and follow-up state.
 - `mother_sangha_report_rows(year, level)` returns one level at a time for filling a copy of the unchanged Mother Sangha workbook.
+- `apply_official_exam_import_batch(batch_id)` applies staff-reviewed official eligibility/seat/result staging rows idempotently; unmatched rows remain review.
 - Both RPCs require Supabase Auth plus an active `staff_roles` row. They are never exposed to `anon`.
 
 ## ข้อกำหนด
