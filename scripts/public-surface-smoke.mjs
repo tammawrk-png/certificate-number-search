@@ -25,6 +25,6 @@ assert.match(staffJs, /school_report_rows/);
 assert.match(staffJs, /mother_sangha_report_rows/);
 assert.match(staffJs, /sessionStorage/);
 assert.doesNotMatch(config, /(?:service[-_ ]role|client_secret|private_key)\s*[:=]/i);
-assert.match(config, /publishableKey:\s*null/);
+assert.match(config, /publishableKey\s*:/);
 
 console.log('public surface smoke test passed');

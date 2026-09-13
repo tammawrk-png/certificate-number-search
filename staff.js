@@ -7,7 +7,12 @@
   const headers = () => ({ apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
   const setMessage = (text) => { $('#login-message').textContent = text; $('#report-message').textContent = text; };
   const showWorkspace = (visible) => { $('#login-panel').hidden = visible; $('#workspace').hidden = !visible; };
-  const csvEscape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const csvEscape = (value) => {
+    const text = String(value ?? '');
+    // Prevent spreadsheet formula injection when a CSV is opened in Excel.
+    const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
   const downloadCsv = (name, rows) => {
     if (!rows.length) return;
     const columns = Object.keys(rows[0]);
