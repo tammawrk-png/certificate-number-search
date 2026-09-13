@@ -14,6 +14,16 @@
     submitted_registrations: '#metric-registered',
     imported_results: '#metric-passed',
   };
+  let activeAcademicYear = '2569';
+  const syncAcademicYear = (year) => {
+    if (!year) return;
+    activeAcademicYear = String(year);
+    const yearSelect = registrationForm?.elements?.year;
+    if (yearSelect) {
+      yearSelect.innerHTML = `<option value="${escapeHtml(activeAcademicYear)}">${escapeHtml(activeAcademicYear)}</option>`;
+      yearSelect.value = activeAcademicYear;
+    }
+  };
   const setMetric = (name, value) => {
     const node = $(metricMap[name]);
     if (node) node.textContent = value == null ? '—' : Number(value).toLocaleString('th-TH');
@@ -34,6 +44,7 @@
       const rows = await response.json();
       const row = Array.isArray(rows) ? rows[0] : rows;
       if (!row) throw new Error('metrics response was empty');
+      syncAcademicYear(row.academic_year);
       setMetric('current_students', row.current_students);
       setMetric('submitted_registrations', row.submitted_registrations);
       setMetric('imported_results', row.imported_results);
@@ -52,7 +63,7 @@
     }
     try {
       const response = await fetch(`${apiBase}/rest/v1/rpc/public_registration_window_status`, {
-        method: 'POST', headers: apiHeaders, body: JSON.stringify({ requested_year: '2569' }),
+        method: 'POST', headers: apiHeaders, body: JSON.stringify({ requested_year: activeAcademicYear }),
       });
       if (!response.ok) throw new Error(`registration window request failed: ${response.status}`);
       const rows = await response.json();
@@ -156,7 +167,7 @@
     try {
       const response = await fetch(`${apiBase}/rest/v1/rpc/lookup_public_exam_status`, {
         method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: '2569', requested_query: query }),
+        body: JSON.stringify({ requested_year: activeAcademicYear, requested_query: query }),
       });
       if (!response.ok) throw new Error(`lookup request failed: ${response.status}`);
       const rows = await response.json();
