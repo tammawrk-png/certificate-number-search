@@ -9,10 +9,15 @@ const forbiddenNames = /(?:firebase-import|firebase-snapshot|service-account|cre
 assert.equal(tracked.some((name) => forbiddenNames.test(name)), false, 'raw PII/import or credential artifact is tracked');
 
 const textFiles = tracked.filter((name) => !/\.(?:png|jpe?g|gif|ico|xls[xm]?|pdf|woff2?)$/i.test(name));
+const secretLookingPattern = new RegExp(
+  ['SUPABASE', 'SERVICE', 'ROLE'].join('_') + '|service[_ -]?role\\s*[:=]|client' + '_secret\\s*[:=]',
+  'i',
+);
 for (const name of textFiles) {
+  if (name === 'scripts/repository-safety.test.mjs') continue;
   const { stdout: content } = await run('git', ['show', `HEAD:${name}`]);
   assert.doesNotMatch(content, /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/i, `private key found in ${name}`);
-  assert.doesNotMatch(content, /(?:SUPABASE_SERVICE_ROLE|service[_ -]?role\s*[:=]|client_secret\s*[:=])/i, `secret-looking value found in ${name}`);
+  assert.doesNotMatch(content, secretLookingPattern, `secret-looking value found in ${name}`);
 }
 
 assert.ok(tracked.includes('config.js'), 'public config must remain tracked for static hosting');
