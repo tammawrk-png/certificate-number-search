@@ -30,6 +30,8 @@ assert.match(activityJs, /public_registration_window_status/);
 assert.match(activityJs, /public_student_lookup_options/);
 assert.match(activityJs, /public_submit_student_correction/);
 assert.match(activityJs, /public_student_certificate_alerts/);
+assert.doesNotMatch(activityHtml, /แก้ทะเบียนให้ทันที/);
+assert.match(activityHtml, /ส่งคำขอให้เจ้าหน้าที่ตรวจสอบก่อนปรับทะเบียน/);
 assert.match(staffHtml, /id="login-form"/);
 assert.match(staffHtml, /id="workspace"/);
 assert.match(staffHtml, /data-brand="dharma"/);
