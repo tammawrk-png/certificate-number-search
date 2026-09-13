@@ -17,10 +17,37 @@
     const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
     return `"${safe.replace(/"/g, '""')}"`;
   };
-  const downloadCsv = (name, rows) => {
+  const reportColumns = {
+    school: [
+      ['academic_year', 'ปีการศึกษา'], ['education_band', 'สายการศึกษา'], ['grade_level', 'ชั้น'], ['room_no', 'ห้อง'],
+      ['student_number', 'เลขประจำตัวนักเรียน'], ['full_name', 'ชื่อ-นามสกุล'], ['advisor_1', 'ครูที่ปรึกษา 1'], ['advisor_2', 'ครูที่ปรึกษา 2'],
+      ['match_status', 'สถานะจับคู่ประวัติ'], ['highest_legacy_level', 'ระดับสูงสุดจากประวัติเดิม'], ['recommended_level', 'ระดับที่แนะนำ'],
+      ['required_for_grade', 'ชั้นบังคับหรือไม่'], ['dhamma_level', 'ระดับที่สมัคร'], ['application_status', 'สถานะสมัคร'],
+      ['eligibility_status', 'สิทธิ์สอบ'], ['exam_room', 'ห้องสอบ'], ['seat_no', 'เลขที่สอบ'], ['result_status', 'ผลสอบ'], ['score', 'คะแนน'], ['follow_up_status', 'สถานะติดตาม'],
+    ],
+    ตรี: [
+      ['academic_year', 'ปีการศึกษา'], ['dhamma_level', 'ระดับธรรมศึกษา'], ['student_number', 'เลขประจำตัวนักเรียน'], ['full_name', 'ชื่อ-นามสกุล'],
+      ['education_band', 'สายการศึกษา'], ['grade_level', 'ชั้น'], ['room_no', 'ห้อง'], ['advisor_1', 'ครูที่ปรึกษา 1'], ['advisor_2', 'ครูที่ปรึกษา 2'],
+      ['eligibility_status', 'สิทธิ์สอบ'], ['exam_room', 'ห้องสอบ'], ['seat_no', 'เลขที่สอบ'], ['result_status', 'ผลสอบ'], ['score', 'คะแนน'],
+    ],
+    โท: [],
+    เอก: [],
+    pickup: [
+      ['academic_year', 'ปีการศึกษา'], ['student_number', 'เลขประจำตัวนักเรียน'], ['current_full_name', 'ชื่อ-นามสกุลปัจจุบัน'],
+      ['education_band', 'สายการศึกษา'], ['grade_level', 'ชั้น'], ['room_no', 'ห้อง'], ['advisor_1', 'ครูที่ปรึกษา 1'], ['advisor_2', 'ครูที่ปรึกษา 2'],
+      ['certificate_no', 'เลขใบประกาศ'], ['legacy_full_name', 'ชื่อในประวัติเดิม'], ['dhamma_level', 'ระดับธรรมศึกษา'], ['exam_year_be', 'ปีสอบ'],
+      ['pickup_status', 'สถานะรับใบประกาศ'], ['match_status', 'สถานะจับคู่ประวัติ'], ['pickup_note', 'หมายเหตุ'],
+    ],
+  };
+  reportColumns.โท = reportColumns.ตรี;
+  reportColumns.เอก = reportColumns.ตรี;
+  const downloadCsv = (name, rows, reportKey) => {
     if (!rows.length) return;
-    const columns = Object.keys(rows[0]);
-    const csv = [columns, ...rows.map((row) => columns.map((column) => row[column]))].map((row) => row.map(csvEscape).join(',')).join('\r\n');
+    const available = new Set(Object.keys(rows[0]));
+    const columns = (reportColumns[reportKey] || Object.keys(rows[0]).map((key) => [key, key]))
+      .filter(([key]) => available.has(key));
+    const csv = [columns.map(([, label]) => label), ...rows.map((row) => columns.map(([key]) => row[key]))]
+      .map((row) => row.map(csvEscape).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
   };
@@ -115,7 +142,7 @@
       }
     } catch (error) { console.warn(error); setMessage('บันทึกการตัดสินไม่สำเร็จ กรุณาตรวจสอบสิทธิ์หรือรายการซ้ำ'); button.disabled = false; }
   });
-  document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => downloadCsv(`dharma-${button.dataset.report}-${$('#report-year').value}.csv`, loadedReports[button.dataset.report] || [])));
+  document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => downloadCsv(`dharma-${button.dataset.report}-${$('#report-year').value}.csv`, loadedReports[button.dataset.report] || [], button.dataset.report)));
   $('#sign-out').addEventListener('click', () => { sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false); });
   const validateSession = async () => {
     if (!accessToken || !apiBase || !config?.publishableKey) { showWorkspace(false); return; }
