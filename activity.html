@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="description" content="ระบบกิจกรรมธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา" />
+    <title>ระบบกิจกรรมธรรมศึกษา</title>
+    <link rel="stylesheet" href="activity.css?v=20260913-1" />
+  </head>
+  <body>
+    <main class="activity-shell">
+      <header class="activity-header">
+        <a class="back-link" href="index.html">← ค้นเลขใบประกาศ</a>
+        <p class="eyebrow">งานธรรมศึกษา · โรงเรียนวัดไร่ขิงวิทยา</p>
+        <h1>ระบบกิจกรรมธรรมศึกษา</h1>
+        <p>จัดการรายชื่อ สมัครสอบ ติดตามประกาศ และจัดทำรายงานในระบบเดียว</p>
+      </header>
+
+      <nav class="tabs" aria-label="เมนูระบบ">
+        <a class="tab active" href="#dashboard">ภาพรวม</a>
+        <a class="tab" href="#register">รับสมัครสอบ</a>
+        <a class="tab" href="#lookup">ตรวจสอบรายชื่อ</a>
+        <a class="tab" href="#reports">รายงาน</a>
+      </nav>
+
+      <section id="dashboard" class="panel">
+        <div class="panel-heading"><div><span class="kicker">Dashboard สาธารณะ</span><h2>ภาพรวมการดำเนินงาน</h2></div><span id="metrics-state" class="state pending">รอข้อมูลระบบ</span></div>
+        <div class="metric-grid">
+          <article class="metric"><span>นักเรียนปัจจุบัน</span><strong id="metric-students">—</strong><small>รายชื่อที่นำเข้าแล้ว</small></article>
+          <article class="metric"><span>จับคู่ประวัติแล้ว</span><strong id="metric-matched">—</strong><small>ต้องตรวจสอบก่อนยืนยัน</small></article>
+          <article class="metric"><span>สมัครสอบแล้ว</span><strong id="metric-registered">—</strong><small>แยกตามสายและระดับ</small></article>
+          <article class="metric"><span>สอบผ่าน</span><strong id="metric-passed">—</strong><small>แสดงเมื่อมีผลทางการ</small></article>
+        </div>
+        <div class="notice"><strong>สถานะข้อมูลทางการ</strong><p>ห้องสอบ เลขที่สอบ และผลสอบจะแสดงภายหลังมีประกาศจากแม่กองธรรมและเจ้าหน้าที่นำเข้าข้อมูลแล้วเท่านั้น</p></div>
+      </section>
+
+      <section id="register" class="panel">
+        <div class="panel-heading"><div><span class="kicker">Registration</span><h2>รับสมัครสอบ</h2></div><span class="state pending">เตรียมเปิดรับสมัคร</span></div>
+        <form id="registration-form" class="form-grid">
+          <label>ปีการศึกษา<select name="year" required><option value="2569">2569</option></select></label>
+          <label>สายการศึกษา<select name="band" required><option value="lower_secondary">มัธยมศึกษาตอนต้น</option><option value="upper_secondary">มัธยมศึกษาตอนปลาย</option><option value="higher_education">อุดมศึกษา</option></select></label>
+          <label>ระดับธรรมศึกษา<select name="level" required><option value="ตรี">ชั้นตรี</option><option value="โท">ชั้นโท</option><option value="เอก">ชั้นเอก</option></select></label>
+          <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" required placeholder="กรอกเลขประจำตัว" /></label>
+          <label>ชื่อ-นามสกุล<input name="fullName" required placeholder="กรอกชื่อและนามสกุล" /></label>
+          <label class="check-field"><input name="consent" type="checkbox" required /> ยืนยันว่าข้อมูลถูกต้อง</label>
+          <button class="primary" type="submit">บันทึกใบสมัคร</button>
+        </form>
+        <p id="registration-message" class="form-message" role="status"></p>
+      </section>
+
+      <section id="lookup" class="panel">
+        <div class="panel-heading"><div><span class="kicker">Public lookup</span><h2>ตรวจสอบรายชื่อผู้มีสิทธิ์สอบ</h2></div><span class="state pending">รอประกาศทางการ</span></div>
+        <form id="lookup-form" class="lookup-form"><label class="sr-only" for="lookup-input">ค้นหาเลขประจำตัวหรือชื่อ</label><input id="lookup-input" placeholder="เลขประจำตัว หรือชื่อ-นามสกุล" /><button class="primary" type="submit">ตรวจสอบ</button></form>
+        <div id="lookup-result" class="lookup-result">ยังไม่มีข้อมูลประกาศผู้มีสิทธิ์สอบ ห้องสอบ เลขที่สอบ หรือผลสอบในระบบ</div>
+      </section>
+
+      <section id="reports" class="panel">
+        <div class="panel-heading"><div><span class="kicker">Reports</span><h2>รายงาน</h2></div><span class="state pending">รอข้อมูลสมัครสอบ</span></div>
+        <div class="report-grid"><article><h3>แบบแม่กองธรรม</h3><p>แยกไฟล์ชั้นตรี โท เอก และคงโครงสร้างต้นฉบับเดิม</p><button class="secondary" disabled>ยังไม่มีข้อมูลสำหรับส่งออก</button></article><article><h3>แบบโรงเรียน</h3><p>ชั้น ห้อง เลขที่ ครูที่ปรึกษา สถานะสมัคร และติดตามรายคน</p><button class="secondary" disabled>ยังไม่มีข้อมูลสำหรับส่งออก</button></article></div>
+      </section>
+      <footer><span>งานธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา</span><span>ระบบกิจกรรมรุ่นเริ่มต้น</span></footer>
+    </main>
+    <script src="config.js?v=20260913-activity"></script><script src="activity.js?v=20260913-1"></script>
+  </body>
+</html>
