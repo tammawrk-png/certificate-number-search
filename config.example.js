@@ -1,5 +1,9 @@
 // คัดลอกไฟล์นี้เป็น config.js แล้วเติมค่าจาก Firebase Console > Project settings > Your apps
 window.APP_CONFIG = {
+  supabase: {
+    url: "https://your-project-ref.supabase.co",
+    publishableKey: "เติมค่า-publishable-key-สำหรับ-public-read-เท่านั้น"
+  },
   firebase: {
     apiKey: "เติมค่า-apiKey",
     authDomain: "เติมค่า.firebaseapp.com",

@@ -1,5 +1,10 @@
 // Firebase Web config ของบัญชี tammawrk@gmail.com
 window.APP_CONFIG = {
+  supabase: {
+    url: "https://jmlcsrmrtghmnpdpfdcf.supabase.co",
+    // สร้างหลังได้รับอนุญาตเท่านั้น; ห้ามใส่ secret/service-role key ในไฟล์นี้
+    publishableKey: null
+  },
   firebase: {
     apiKey: "AIzaSyBWyU80GjubCrVJ8e8dtdmZN7V6WY5E-uU",
     authDomain: "certificate-number-search-th.firebaseapp.com",
