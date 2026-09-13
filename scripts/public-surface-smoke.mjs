@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config] = await Promise.all([
+const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config, activityCss, staffCss] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.js', import.meta.url), 'utf8'),
   readFile(new URL('../staff.html', import.meta.url), 'utf8'),
   readFile(new URL('../staff.js', import.meta.url), 'utf8'),
   readFile(new URL('../config.js', import.meta.url), 'utf8'),
+  readFile(new URL('../activity.css', import.meta.url), 'utf8'),
+  readFile(new URL('../staff.css', import.meta.url), 'utf8'),
 ]);
 const configBuilder = await readFile(new URL('../scripts/prepare-public-config.mjs', import.meta.url), 'utf8');
 const deployWorkflow = await readFile(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
@@ -37,6 +39,9 @@ assert.match(activityJs, /public_student_certificate_alerts/);
 assert.doesNotMatch(activityHtml, /แก้ทะเบียนให้ทันที/);
 assert.match(activityHtml, /บันทึกข้อมูลของฉัน/);
 assert.match(activityHtml, /ประวัติใบประกาศเดิม/);
+assert.match(activityCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+assert.match(activityCss, /min-height: 52px; height: 52px/);
+assert.match(staffCss, /min-height:?\s*46px/);
 assert.match(staffHtml, /id="login-form"/);
 assert.match(staffHtml, /id="workspace"/);
 assert.match(staffHtml, /data-brand="dharma"/);
