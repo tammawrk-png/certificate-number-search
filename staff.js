@@ -60,6 +60,11 @@
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
   };
+  const downloadJson = (name, rows) => {
+    if (!rows.length) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+  };
   const escapeHtml = (value) => String(value ?? '—').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const renderTable = (rows, title, actions = false) => {
     const head = $('#report-head'); const body = $('#report-body'); $('#table-title').textContent = title; $('#row-count').textContent = `${rows.length.toLocaleString('th-TH')} รายการ`;
@@ -151,7 +156,12 @@
       }
     } catch (error) { console.warn(error); setMessage('บันทึกการตัดสินไม่สำเร็จ กรุณาตรวจสอบสิทธิ์หรือรายการซ้ำ'); button.disabled = false; }
   });
-  document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => downloadCsv(`dharma-${button.dataset.report}-${$('#report-year').value}.csv`, loadedReports[button.dataset.report] || [], button.dataset.report)));
+  document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => {
+    const rows = loadedReports[button.dataset.report] || [];
+    const year = $('#report-year').value;
+    if (button.dataset.format === 'json') downloadJson(`dharma-${button.dataset.report}-${year}.json`, rows);
+    else downloadCsv(`dharma-${button.dataset.report}-${year}.csv`, rows, button.dataset.report);
+  }));
   $('#sign-out').addEventListener('click', () => { sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false); });
   const validateSession = async () => {
     if (!accessToken || !apiBase || !config?.publishableKey) { showWorkspace(false); return; }
