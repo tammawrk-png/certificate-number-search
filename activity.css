@@ -77,7 +77,8 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .wizard-step[hidden] { display: none; }
 .step-title { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
 .step-title h3 { margin: .2rem 0 0; color: var(--ink); font-size: 1.25rem; }
-.step-icon { display: grid; place-items: center; width: 42px; height: 42px; color: #fff; border-radius: 14px; background: linear-gradient(135deg, #7c3aed, #2563eb); font-size: 1.25rem; }
+.step-icon { display: grid; place-items: center; width: 42px; height: 42px; color: #fff; border-radius: 14px; background: linear-gradient(135deg, #7c3aed, #2563eb); }
+.step-icon svg,.tip-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .form-grid label { display: grid; gap: 7px; color: #344054; font-weight: 800; }
 .form-grid input, .form-grid select, .lookup-form input { width: 100%; border: 1px solid #d0d5dd; border-radius: 12px; padding: 13px 14px; color: var(--ink); background: #fff; font: inherit; outline: none; transition: .18s; }
