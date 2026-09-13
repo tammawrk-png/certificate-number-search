@@ -2,7 +2,10 @@
   const $ = (selector) => document.querySelector(selector);
   document.querySelector('[data-brand="dharma"]')?.setAttribute('src', window.SCHOOL_ASSETS?.dharmaLogo || '');
   document.querySelector('[data-brand="school"]')?.setAttribute('src', window.SCHOOL_ASSETS?.schoolLogo || '');
-  const config = window.APP_CONFIG?.supabase;
+  const config = window.APP_CONFIG?.supabase || {
+    url: 'https://jmlcsrmrtghmnpdpfdcf.supabase.co',
+    publishableKey: 'sb_publishable_ZyZtx2b_wS6XA-PmN5L5cQ_J6WiYrJG',
+  };
   const apiBase = config?.url?.replace(/\/$/, '');
   const apiHeaders = config?.publishableKey
     ? { apikey: config.publishableKey, Authorization: `Bearer ${config.publishableKey}`, 'Content-Type': 'application/json' }
