@@ -56,6 +56,7 @@ as $$
   left join exam_seats seat on seat.registration_id = r.id
   left join exam_rooms er on er.id = seat.exam_room_id
   left join exam_results result on result.registration_id = r.id
+  where public.is_staff()
   order by g.education_band, g.grade_level, g.room_no, g.student_number, r.dhamma_level;
 $$;
 

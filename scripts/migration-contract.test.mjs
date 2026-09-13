@@ -25,6 +25,8 @@ assert.doesNotMatch(m11, /grant execute on function public\.refresh_certificate_
 assert.match(m12, /staff_roles/);
 assert.match(m12, /STAFF_ROLE_REQUIRED/);
 assert.doesNotMatch(m15, /grant execute[^;]+to anon/i);
+assert.match(m15, /create or replace function public\.school_report_rows[\s\S]*?where public\.is_staff\(\)/);
+assert.match(m15, /create or replace function public\.mother_sangha_report_rows[\s\S]*?where public\.is_staff\(\)/);
 assert.match(m17, /apply_official_exam_import_batch/);
 assert.doesNotMatch(m17, /grant execute[^;]+to anon/i);
 assert.match(m18, /create policy staff_roster_staging_all/);
