@@ -19,11 +19,10 @@
 
       <section id="login-panel" class="card login-card">
         <span class="kicker">เข้าสู่พื้นที่เจ้าหน้าที่</span>
-        <h2>ขอลิงก์เข้าใช้งาน</h2>
-        <p>ใช้บัญชีที่ผู้ดูแลเพิ่มไว้ใน `staff_roles` ระบบจะส่งลิงก์เข้าอีเมลโดยไม่ต้องจำรหัสผ่าน</p>
+        <h2>ยืนยันสิทธิ์ด้วย Google</h2>
+        <p>ใช้บัญชี Google ขององค์กรที่ลงท้ายด้วย <strong>@wrk.ac.th</strong> ระบบจะตรวจสิทธิ์ซ้ำกับ `staff_roles` ก่อนเปิดข้อมูล</p>
         <form id="login-form" class="login-form">
-          <label for="staff-email">อีเมลเจ้าหน้าที่</label>
-          <div class="login-row"><input id="staff-email" type="email" autocomplete="email" required placeholder="name@school.ac.th" /><button class="primary" type="submit">ส่งลิงก์เข้าใช้งาน</button></div>
+          <button id="google-login" class="primary google-login" type="submit"><span class="google-mark">G</span> เข้าสู่ระบบด้วย Google</button>
         </form>
         <p id="login-message" class="message" role="status"></p>
       </section>

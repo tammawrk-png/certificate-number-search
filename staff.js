@@ -4,11 +4,13 @@
   document.querySelector('[data-brand="school"]')?.setAttribute('src', window.SCHOOL_ASSETS?.schoolLogo || '');
   const config = window.APP_CONFIG?.supabase;
   const apiBase = config?.url?.replace(/\/$/, '');
+  const allowedDomain = '@wrk.ac.th';
   let accessToken = sessionStorage.getItem('dharma_staff_access_token') || '';
   let loadedReports = { school: [], match: [], corrections: [], pickup: [], ตรี: [], โท: [], เอก: [] };
   const headers = () => ({ apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
   const setMessage = (text) => { $('#login-message').textContent = text; $('#report-message').textContent = text; };
   const showWorkspace = (visible) => { $('#login-panel').hidden = visible; $('#workspace').hidden = !visible; };
+  const isAllowedStaffEmail = (email) => String(email || '').trim().toLowerCase().endsWith(allowedDomain);
   const csvEscape = (value) => {
     const text = String(value ?? '');
     // Prevent spreadsheet formula injection when a CSV is opened in Excel.
@@ -82,15 +84,12 @@
     } catch (error) { console.warn(error); setMessage('โหลดรายงานไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
     finally { $('#load-report').disabled = false; }
   };
-  $('#login-form').addEventListener('submit', async (event) => {
+  $('#login-form').addEventListener('submit', (event) => {
     event.preventDefault();
     if (!apiBase || !config?.publishableKey) { setMessage('ยังไม่ได้เชื่อม Supabase publishable key'); return; }
-    const email = $('#staff-email').value.trim(); setMessage('กำลังส่งลิงก์เข้าใช้งาน…');
-    try {
-      const response = await fetch(`${apiBase}/auth/v1/otp`, { method: 'POST', headers: { apikey: config.publishableKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, create_user: false, options: { email_redirect_to: window.location.href.split('#')[0] } }) });
-      if (!response.ok) throw new Error(`OTP request failed: ${response.status}`);
-      setMessage('ส่งลิงก์แล้ว กรุณาตรวจสอบอีเมลของคุณ');
-    } catch (error) { console.warn(error); setMessage('ส่งลิงก์ไม่สำเร็จ กรุณาตรวจสอบอีเมลหรือการตั้งค่า Supabase Auth'); }
+    setMessage('กำลังเปิดการยืนยันสิทธิ์ด้วย Google…');
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    window.location.assign(`${apiBase}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`);
   });
   $('#load-report').addEventListener('click', loadReports);
   $('#load-match-review').addEventListener('click', loadMatchReview);
@@ -112,7 +111,21 @@
   });
   document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => downloadCsv(`dharma-${button.dataset.report}-${$('#report-year').value}.csv`, loadedReports[button.dataset.report] || [])));
   $('#sign-out').addEventListener('click', () => { sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false); });
+  const validateSession = async () => {
+    if (!accessToken || !apiBase || !config?.publishableKey) { showWorkspace(false); return; }
+    try {
+      const response = await fetch(`${apiBase}/auth/v1/user`, { headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}` } });
+      if (!response.ok) throw new Error(`session user request failed: ${response.status}`);
+      const user = await response.json();
+      if (!isAllowedStaffEmail(user.email)) throw new Error('STAFF_DOMAIN_REQUIRED');
+      showWorkspace(true);
+      setMessage(`เข้าสู่ระบบแล้ว: ${user.email} · ระบบจะตรวจ staff role เมื่อโหลดข้อมูล`);
+    } catch (error) {
+      console.warn(error); sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false);
+      setMessage(error.message === 'STAFF_DOMAIN_REQUIRED' ? 'บัญชีนี้ไม่ใช่อีเมลองค์กร @wrk.ac.th' : 'ยืนยันบัญชี Google ไม่สำเร็จ กรุณาลองใหม่');
+    }
+  };
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const hashToken = hash.get('access_token'); if (hashToken) { accessToken = hashToken; sessionStorage.setItem('dharma_staff_access_token', accessToken); history.replaceState({}, '', window.location.pathname); }
-  showWorkspace(Boolean(accessToken));
+  validateSession();
 })();
