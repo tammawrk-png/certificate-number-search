@@ -15,7 +15,6 @@ returns table (
   citizen_id text,
   birth_date_be text
 )
-language sql stable security definer set search_path = public
 as $$
   select true, s.student_number, s.title, s.first_name, s.last_name, s.citizen_id,
     case when s.birth_date is null then null else to_char(s.birth_date + interval '543 years', 'DD/MM/YYYY') end
@@ -24,7 +23,7 @@ as $$
   join academic_years y on y.id = c.academic_year_id and y.year_be = trim(requested_year)
   where s.status = 'active' and s.student_number = trim(requested_student_number)
   limit 1;
-$$;
+$$ language sql stable security definer set search_path = public;
 
 revoke all on function public.public_student_identity(text, text) from public;
 grant execute on function public.public_student_identity(text, text) to anon, authenticated;
@@ -40,7 +39,6 @@ create or replace function public.public_update_student_self(
   requested_birth_date_be text default null
 )
 returns table (saved boolean, result_code text, message text)
-language plpgsql security definer set search_path = public
 as $$
 declare
   target students%rowtype;
@@ -80,7 +78,7 @@ begin
       jsonb_build_object('student_number', target.student_number, 'fields', jsonb_build_array('title','name','citizen_id','birth_date')));
   return query select true, 'SAVED', 'บันทึกข้อมูลของคุณแล้ว ข้อมูลประวัติใบประกาศจะถูกตรวจจับคู่ใหม่หากชื่อมีการเปลี่ยนแปลง';
 end;
-$$;
+$$ language plpgsql security definer set search_path = public;
 
 revoke all on function public.public_update_student_self(text, text, text, text, text, text, text, text) from public;
 grant execute on function public.public_update_student_self(text, text, text, text, text, text, text, text) to anon, authenticated;
