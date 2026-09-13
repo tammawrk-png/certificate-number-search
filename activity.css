@@ -79,9 +79,10 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .step-title h3 { margin: .2rem 0 0; color: var(--ink); font-size: 1.25rem; }
 .step-icon { display: grid; place-items: center; width: 42px; height: 42px; color: #fff; border-radius: 14px; background: linear-gradient(135deg, #7c3aed, #2563eb); }
 .step-icon svg,.tip-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.form-grid label { display: grid; gap: 7px; color: #344054; font-weight: 800; }
-.form-grid input, .form-grid select, .lookup-form input { width: 100%; border: 1px solid #d0d5dd; border-radius: 12px; padding: 13px 14px; color: var(--ink); background: #fff; font: inherit; outline: none; transition: .18s; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.form-grid label { display: grid; gap: 7px; min-width: 0; color: #344054; font-weight: 800; align-content: start; }
+/* Keep controls aligned even when a neighboring label has helper text. */
+.form-grid input, .form-grid select, .lookup-form input { align-self: start; width: 100%; min-height: 52px; height: 52px; border: 1px solid #d0d5dd; border-radius: 12px; padding: 13px 14px; color: var(--ink); background: #fff; font: inherit; line-height: 1.35; outline: none; transition: .18s; }
 .form-grid input:focus, .form-grid select:focus, .lookup-form input:focus { border-color: #7c3aed; box-shadow: 0 0 0 4px #ede9fe; }
 .form-grid small { color: var(--muted); font-weight: 500; line-height: 1.5; }
 .level-choice { grid-column: 1 / -1; }
