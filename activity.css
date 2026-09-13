@@ -102,6 +102,8 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .self-edit-panel { display: grid; gap: 12px; margin-top: 14px; padding: 16px; border: 1px solid #c7d2fe; border-radius: 16px; background: #f8faff; color: #1e3a8a; }
 .self-edit-panel p { margin: 4px 0 0; color: #475569; font-weight: 500; }
 .self-edit-panel .secondary { justify-self: start; }
+.registration-mode-note { margin: 12px 0; padding: 12px 14px; border-radius: 12px; color: #166534; background: #f0fdf4; font-weight: 700; }
+.registration-mode-note.update-mode { color: #92400e; background: #fffbeb; }
 .correction-grid { grid-template-columns: repeat(2, 1fr); }
 .exam-site { display: grid; gap: 3px; margin-top: 14px; padding: 14px 16px; border-left: 4px solid #06b6d4; border-radius: 12px; background: #ecfeff; color: #155e75; }
 .exam-site span { font-weight: 800; }

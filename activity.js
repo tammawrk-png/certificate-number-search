@@ -23,6 +23,7 @@
   let activeAcademicYear = '2569';
   let registrationOpen = false;
   let verifiedStudent = null;
+  let existingRegistrations = [];
   const syncAcademicYear = (year) => {
     if (!year) return;
     activeAcademicYear = String(year);
@@ -90,7 +91,7 @@
   const wizardSteps = [...registrationForm.querySelectorAll('.wizard-step')];
   const stepIndicators = [...document.querySelectorAll('[data-step-indicator]')];
   let currentStep = 1;
-  const summaryLabels = { year: 'ปีการศึกษา', band: 'สายการศึกษา', level: 'ระดับธรรมศึกษา', studentNumber: 'เลขประจำตัวนักเรียน', fullName: 'ชื่อ-นามสกุล', grade: 'ชั้น/ห้อง', advisors: 'ครูที่ปรึกษา' };
+  const summaryLabels = { year: 'ปีการศึกษา', band: 'สายการศึกษา', level: 'ระดับธรรมศึกษา', studentNumber: 'เลขประจำตัวนักเรียน', fullName: 'ชื่อ-นามสกุล', grade: 'ชั้น/ห้อง', advisors: 'ครูที่ปรึกษา', application: 'สถานะใบสมัคร' };
   const bandLabels = { lower_secondary: 'มัธยมศึกษาตอนต้น', upper_secondary: 'มัธยมศึกษาตอนปลาย', higher_education: 'อุดมศึกษา' };
   const guidanceLabels = { required: 'ต้องสมัครชั้นตรีตามเกณฑ์ชั้นเริ่มต้น', suggested: 'แนะนำระดับถัดไปจากประวัติเดิม', completed: 'พบประวัติชั้นเอกแล้ว ไม่บังคับสมัครต่อ', unmatched: 'ยังไม่พบประวัติที่จับคู่ได้', review_required: 'พบประวัติชื่อซ้ำ รอเจ้าหน้าที่ตรวจสอบ' };
   const selectedText = (name) => registrationForm.elements[name]?.selectedOptions?.[0]?.textContent || registrationForm.elements[name]?.value || '';
@@ -100,6 +101,7 @@
       studentNumber: verifiedStudent?.student_number || registrationForm.elements.studentNumber.value.trim(), fullName: verifiedStudent?.full_name || 'ยังไม่ได้ยืนยันตัวตน',
       grade: verifiedStudent ? `ม.${verifiedStudent.grade_level} · ห้อง ${verifiedStudent.room_no}` : '—',
       advisors: verifiedStudent ? [verifiedStudent.advisor_1, verifiedStudent.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล' : '—',
+      application: existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value) ? 'มีใบสมัครระดับนี้แล้ว — การส่งครั้งนี้จะอัปเดตใบสมัครเดิม' : 'ยังไม่มีใบสมัครระดับนี้ — การส่งครั้งนี้จะสร้างใบสมัครใหม่',
     };
     $('#registration-summary').innerHTML = Object.entries(values).map(([key, value]) =>
       `<div class="summary-row"><span>${summaryLabels[key]}</span><strong>${escapeHtml(value || '—')}</strong></div>`
@@ -173,6 +175,7 @@
       registrationForm.elements.selfCitizenId.value = identity?.citizen_id || '';
       registrationForm.elements.selfBirthDate.value = identity?.birth_date_be || '';
       await loadCertificateAlerts(studentNumber);
+      await loadRegistrationStatus(studentNumber);
       return true;
     } catch (error) {
       console.warn(error);
@@ -181,6 +184,17 @@
       preview.textContent = 'ระบบตรวจทะเบียนขัดข้องชั่วคราว กรุณาลองใหม่';
       return false;
     }
+  };
+  const loadRegistrationStatus = async (studentNumber) => {
+    existingRegistrations = [];
+    try {
+      const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_registration_status`, { method: 'POST', headers: apiHeaders,
+        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }) });
+      if (response.ok) existingRegistrations = await response.json();
+      const current = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
+      const note = $('#registration-mode-note');
+      if (note) { note.hidden = false; note.textContent = current ? 'มีใบสมัครระดับนี้อยู่แล้ว การกดส่งจะอัปเดตข้อมูลใบสมัครเดิม ไม่สร้างรายการซ้ำ' : 'ยังไม่มีใบสมัครระดับนี้ การกดส่งจะสร้างใบสมัครใหม่'; note.classList.toggle('update-mode', current); }
+    } catch (error) { console.warn(error); }
   };
   const loadCertificateAlerts = async (studentNumber) => {
     const node = $('#certificate-alert');
@@ -201,9 +215,16 @@
   };
   registrationForm.elements.studentNumber.addEventListener('input', () => {
     verifiedStudent = null;
+    existingRegistrations = [];
     $('#identity-preview').hidden = true;
     $('#certificate-alert').hidden = true;
     $('#self-edit-panel').hidden = true;
+    $('#registration-mode-note').hidden = true;
+  });
+  registrationForm.elements.level.addEventListener('change', () => {
+    const current = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
+    const note = $('#registration-mode-note');
+    if (note && verifiedStudent) { note.hidden = false; note.textContent = current ? 'มีใบสมัครระดับนี้อยู่แล้ว การกดส่งจะอัปเดตข้อมูลใบสมัครเดิม ไม่สร้างรายการซ้ำ' : 'ยังไม่มีใบสมัครระดับนี้ การกดส่งจะสร้างใบสมัครใหม่'; note.classList.toggle('update-mode', current); }
   });
   $('#save-self-data').addEventListener('click', async (event) => {
     const panel = $('#self-edit-panel');
@@ -272,8 +293,9 @@
       if (!response.ok) throw new Error(`registration request failed: ${response.status}`);
       const rows = await response.json();
       const result = Array.isArray(rows) ? rows[0] : rows;
+      const wasExisting = existingRegistrations.some((item) => item.dhamma_level === form.get('level'));
       message.textContent = result?.reference_code
-        ? `${result.message} เลขอ้างอิง ${result.reference_code}`
+        ? `${wasExisting ? 'อัปเดตใบสมัครเดิมแล้ว' : result.message} เลขอ้างอิง ${result.reference_code}`
         : (result?.message || 'ระบบไม่สามารถยืนยันผลการสมัครได้');
     } catch (error) {
       console.warn(error);
