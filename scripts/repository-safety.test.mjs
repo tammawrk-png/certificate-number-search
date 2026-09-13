@@ -15,7 +15,12 @@ const secretLookingPattern = new RegExp(
 );
 for (const name of textFiles) {
   if (name === 'scripts/repository-safety.test.mjs') continue;
-  const { stdout: content } = await run('git', ['show', `HEAD:${name}`]);
+  const { stdout: rawContent } = await run('git', ['show', `HEAD:${name}`]);
+  const content = rawContent
+    // GitHub Actions secret/variable handles are safe references, not values.
+    .replace(/\$\{\{\s*secrets\.[A-Z0-9_]+\s*\}\}/g, 'GITHUB_SECRET_REFERENCE')
+    .replace(/\$\{\{\s*vars\.[A-Z0-9_]+\s*\}\}/g, 'GITHUB_VARIABLE_REFERENCE')
+    .replace(/SUPABASE_SERVICE_ROLE_KEY/g, 'RUNTIME_SECRET_HANDLE');
   assert.doesNotMatch(content, /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/i, `private key found in ${name}`);
   assert.doesNotMatch(content, secretLookingPattern, `secret-looking value found in ${name}`);
 }
