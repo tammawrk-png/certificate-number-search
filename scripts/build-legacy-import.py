@@ -66,13 +66,20 @@ def main() -> None:
             "source_payload": json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
         })
 
+    invalid = {
+        "empty_names": sum(not row["normalized_name"] for row in rows),
+        "empty_certificate_numbers": sum(not row["certificate_no"] for row in rows),
+        "unknown_levels": sum(not row["level"] for row in rows),
+    }
+    if any(invalid.values()):
+        raise SystemExit(json.dumps({"error": "legacy snapshot failed import validation", **invalid}, ensure_ascii=False))
+
     fields = ["firebase_key", "certificate_no", "first_name", "last_name", "full_name", "normalized_name", "education_band", "level", "exam_year_be", "source_database", "source_payload"]
     with args.output_csv.open("w", newline="", encoding="utf-8-sig") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
-    unknown_levels = sum(not row["level"] for row in rows)
-    print(json.dumps({"output": str(args.output_csv), "rows": len(rows), "unknown_levels": unknown_levels, "empty_names": sum(not row["normalized_name"] for row in rows)}, ensure_ascii=False))
+    print(json.dumps({"output": str(args.output_csv), "rows": len(rows), **invalid}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
