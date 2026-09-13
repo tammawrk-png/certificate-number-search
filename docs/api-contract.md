@@ -13,6 +13,13 @@
 - `apply_official_exam_import_batch(batch_id)` applies staff-reviewed official eligibility/seat/result staging rows idempotently; unmatched rows remain review.
 - Both RPCs require Supabase Auth plus an active `staff_roles` row. They are never exposed to `anon`.
 
+## Public registration preflight
+
+- `public_student_registration_options(year, student_number, full_name)` verifies an exact current-roster identity before the final submit step.
+- The response supplies the server-owned education band, grade, room, advisor(s), and non-binding historical progression guidance. It does not return raw certificate rows.
+- If no exact identity is found, the RPC returns no row and the page must keep the user on the identity step.
+- `submit_public_registration_v2(...)` remains the final authority: it rechecks the identity, registration window, band, and year-specific rule at write time.
+
 ## ข้อกำหนด
 
 - ทุก list endpoint รองรับ pagination, search และ filter ตามปี/ระดับ/สถานะ

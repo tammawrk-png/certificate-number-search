@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f766e" />
     <meta name="description" content="ระบบกิจกรรมธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา" />
     <title>ระบบกิจกรรมธรรมศึกษา</title>
-    <link rel="stylesheet" href="activity.css?v=20260913-6" />
+    <link rel="stylesheet" href="activity.css?v=20260913-7" />
   </head>
   <body>
     <main class="activity-shell">
@@ -72,7 +72,7 @@
               <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="เช่น 12345" /></label>
               <label>ชื่อ-นามสกุล<input name="fullName" autocomplete="name" required placeholder="เช่น เด็กชายสมชาย ใจดี" /></label>
             </div>
-            <div id="identity-preview" class="identity-preview" hidden></div>
+            <div id="identity-preview" class="identity-preview" aria-live="polite" hidden></div>
             <div class="wizard-actions"><button class="secondary wizard-back" type="button">← ย้อนกลับ</button><button class="primary wizard-next" type="button">ตรวจข้อมูล <span>→</span></button></div>
           </section>
           <section class="wizard-step" data-step="3" hidden>
@@ -82,7 +82,7 @@
             <div class="wizard-actions"><button class="secondary wizard-back" type="button">← แก้ไขข้อมูล</button><button class="primary" type="submit">ส่งใบสมัคร <span>✓</span></button></div>
           </section>
         </form>
-        <p id="registration-message" class="form-message" role="status"></p>
+        <p id="registration-message" class="form-message" role="status" aria-live="polite"></p>
       </section>
 
       <section id="lookup" class="panel">
@@ -97,6 +97,6 @@
       </section>
       <footer><span>งานธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา</span><a class="staff-link" href="staff.html">พื้นที่เจ้าหน้าที่ ↗</a></footer>
     </main>
-    <script src="config.js?v=20260913-activity-2"></script><script src="activity.js?v=20260913-5"></script>
+    <script src="config.js?v=20260913-activity-2"></script><script src="activity.js?v=20260913-6"></script>
   </body>
 </html>

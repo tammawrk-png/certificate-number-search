@@ -84,6 +84,8 @@
   const stepIndicators = [...document.querySelectorAll('[data-step-indicator]')];
   let currentStep = 1;
   const summaryLabels = { year: 'ปีการศึกษา', band: 'สายการศึกษา', level: 'ระดับธรรมศึกษา', studentNumber: 'เลขประจำตัวนักเรียน', fullName: 'ชื่อ-นามสกุล' };
+  const bandLabels = { lower_secondary: 'มัธยมศึกษาตอนต้น', upper_secondary: 'มัธยมศึกษาตอนปลาย', higher_education: 'อุดมศึกษา' };
+  const guidanceLabels = { required: 'ต้องสมัครชั้นตรีตามเกณฑ์ชั้นเริ่มต้น', suggested: 'แนะนำระดับถัดไปจากประวัติเดิม', completed: 'พบประวัติชั้นเอกแล้ว ไม่บังคับสมัครต่อ', unmatched: 'ยังไม่พบประวัติที่จับคู่ได้' };
   const selectedText = (name) => registrationForm.elements[name]?.selectedOptions?.[0]?.textContent || registrationForm.elements[name]?.value || '';
   const updateSummary = () => {
     const values = {
@@ -108,14 +110,63 @@
   tabs.forEach((tab) => tab.addEventListener('click', () => window.setTimeout(syncActiveTab, 0)));
   window.addEventListener('hashchange', syncActiveTab);
   syncActiveTab();
-  registrationForm.querySelectorAll('.wizard-next').forEach((button) => button.addEventListener('click', () => {
+  const verifyStudent = async () => {
+    const preview = $('#identity-preview');
+    const message = $('#registration-message');
+    preview.classList.remove('error');
+    if (!apiBase || !apiHeaders) {
+      preview.hidden = false;
+      preview.textContent = 'ยังไม่สามารถตรวจทะเบียนได้ เพราะยังไม่ได้เชื่อมต่อ API';
+      return false;
+    }
+    const studentNumber = registrationForm.elements.studentNumber.value.trim();
+    const fullName = registrationForm.elements.fullName.value.trim();
+    preview.hidden = false;
+    preview.textContent = 'กำลังตรวจเลขประจำตัวและชื่อกับทะเบียนโรงเรียน…';
+    try {
+      const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_registration_options`, {
+        method: 'POST', headers: apiHeaders,
+        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber, requested_full_name: fullName }),
+      });
+      if (!response.ok) throw new Error(`student preflight failed: ${response.status}`);
+      const rows = await response.json();
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      if (!row?.verified) {
+        preview.classList.add('error');
+        preview.textContent = 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจเลขประจำตัวและชื่อ-นามสกุลให้ตรงกับทะเบียน';
+        return false;
+      }
+      registrationForm.elements.band.value = row.education_band;
+      if (row.required_level) registrationForm.elements.level.value = row.required_level;
+      const advisors = [row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล';
+      const recommendation = row.recommended_level ? `ระดับที่ระบบแนะนำ: ${row.recommended_level}` : 'ไม่มีระดับต่อเนื่องที่ต้องสมัคร';
+      preview.classList.remove('error');
+      preview.innerHTML = `<strong>ยืนยันทะเบียนแล้ว</strong><div class="preview-grid">` +
+        `<span>สาย/ชั้น</span><b>${escapeHtml(bandLabels[row.education_band] || row.education_band)} · ม.${escapeHtml(row.grade_level)}</b>` +
+        `<span>ห้อง</span><b>ห้อง ${escapeHtml(row.room_no)}</b>` +
+        `<span>ครูที่ปรึกษา</span><b>${escapeHtml(advisors)}</b>` +
+        `<span>ประวัติเดิม</span><b>${escapeHtml(row.highest_legacy_level || 'ยังไม่พบ')} · ${escapeHtml(guidanceLabels[row.guidance_status] || '')}</b>` +
+        `</div><small>${escapeHtml(recommendation)} — เจ้าหน้าที่จะตรวจซ้ำก่อนประกาศรายชื่อ</small>`;
+      return true;
+    } catch (error) {
+      console.warn(error);
+      message.textContent = 'ตรวจทะเบียนไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
+      preview.classList.add('error');
+      preview.textContent = 'ระบบตรวจทะเบียนขัดข้องชั่วคราว กรุณาลองใหม่';
+      return false;
+    }
+  };
+  registrationForm.querySelectorAll('.wizard-next').forEach((button) => button.addEventListener('click', async () => {
     const section = wizardSteps[currentStep - 1];
     const invalid = [...section.querySelectorAll('[required]')].find((field) => !field.checkValidity());
     if (invalid) { invalid.reportValidity(); return; }
     if (currentStep === 2) {
-      const preview = $('#identity-preview');
-      preview.hidden = false;
-      preview.textContent = 'ข้อมูลจะถูกตรวจสอบกับทะเบียนโรงเรียนอีกครั้งเมื่อกดส่งใบสมัคร';
+      button.disabled = true;
+      try {
+        if (!(await verifyStudent())) return;
+      } finally {
+        button.disabled = false;
+      }
     }
     setWizardStep(Math.min(currentStep + 1, 3));
   }));

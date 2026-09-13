@@ -83,7 +83,12 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .tip-icon { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; color: #fff; background: #4f46e5; font-size: .78rem; font-weight: 800; }
 .identity-tip div { display: grid; gap: 2px; }
 .identity-tip span { color: #667085; font-size: .88rem; font-weight: 500; }
-.identity-preview { margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: #f0fdf4; color: #166534; }
+.identity-preview { display: grid; gap: 10px; margin-top: 16px; padding: 15px 16px; border: 1px solid #bbf7d0; border-radius: 14px; background: #f0fdf4; color: #166534; line-height: 1.55; }
+.identity-preview.error { border-color: #fecaca; background: #fff1f2; color: #be123c; }
+.identity-preview small { color: #667085; }
+.preview-grid { display: grid; grid-template-columns: minmax(105px, .35fr) 1fr; gap: 6px 14px; padding: 10px 0; border-top: 1px solid rgba(22,101,52,.14); border-bottom: 1px solid rgba(22,101,52,.14); }
+.preview-grid span { color: #667085; }
+.preview-grid b { color: #14532d; }
 .summary-card { display: grid; gap: 10px; margin-bottom: 20px; padding: 18px; border-radius: 16px; color: #312e81; background: linear-gradient(135deg, #eef2ff, #f5f3ff); }
 .summary-row { display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px dashed #c7d2fe; padding-bottom: 8px; }
 .summary-row:last-child { border-bottom: 0; padding-bottom: 0; }
