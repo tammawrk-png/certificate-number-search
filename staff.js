@@ -3,7 +3,7 @@
   const config = window.APP_CONFIG?.supabase;
   const apiBase = config?.url?.replace(/\/$/, '');
   let accessToken = sessionStorage.getItem('dharma_staff_access_token') || '';
-  let loadedReports = { school: [], match: [], ตรี: [], โท: [], เอก: [] };
+  let loadedReports = { school: [], match: [], corrections: [], ตรี: [], โท: [], เอก: [] };
   const headers = () => ({ apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
   const setMessage = (text) => { $('#login-message').textContent = text; $('#report-message').textContent = text; };
   const showWorkspace = (visible) => { $('#login-panel').hidden = visible; $('#workspace').hidden = !visible; };
@@ -26,7 +26,17 @@
     if (!rows.length) { head.innerHTML = ''; body.innerHTML = '<tr><td class="empty" colspan="8">ไม่พบข้อมูลสำหรับรายงานนี้</td></tr>'; return; }
     const columns = Object.keys(rows[0]);
     head.innerHTML = `<tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}${actions ? '<th>การตัดสิน</th>' : ''}</tr>`;
-    body.innerHTML = rows.slice(0, 100).map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column])}</td>`).join('')}${actions ? `<td class="review-actions"><button class="mini-button confirm" data-match-id="${escapeHtml(row.match_id)}" data-decision="confirmed">ยืนยัน</button><button class="mini-button reject" data-match-id="${escapeHtml(row.match_id)}" data-decision="rejected">ปฏิเสธ</button></td>` : ''}</tr>`).join('');
+    body.innerHTML = rows.slice(0, 100).map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column])}</td>`).join('')}${actions ? (row.match_id ? `<td class="review-actions"><button class="mini-button confirm" data-match-id="${escapeHtml(row.match_id)}" data-decision="confirmed">ยืนยัน</button><button class="mini-button reject" data-match-id="${escapeHtml(row.match_id)}" data-decision="rejected">ปฏิเสธ</button></td>` : `<td class="review-actions"><button class="mini-button confirm" data-correction-id="${escapeHtml(row.correction_id)}" data-decision="approved">อนุมัติแก้ไข</button><button class="mini-button reject" data-correction-id="${escapeHtml(row.correction_id)}" data-decision="rejected">ไม่อนุมัติ</button></td>`) : ''}</tr>`).join('');
+  };
+  const loadCorrectionReview = async () => {
+    const year = $('#report-year').value; $('#load-correction-review').disabled = true; setMessage('กำลังโหลดคำขอแก้ไข…');
+    try {
+      const corrections = await rpc('student_correction_review_rows', { requested_year: year });
+      loadedReports.corrections = corrections;
+      renderTable(corrections, `คำขอแก้ไขข้อมูล · ปี ${year}`, true);
+      setMessage(`พบคำขอรอตรวจ ${corrections.length.toLocaleString('th-TH')} รายการ`);
+    } catch (error) { console.warn(error); setMessage('โหลดคำขอแก้ไขไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    finally { $('#load-correction-review').disabled = false; }
   };
   const loadMatchReview = async () => {
     const year = $('#report-year').value; $('#load-match-review').disabled = true; setMessage('กำลังโหลดคิวจับคู่…');
@@ -70,13 +80,19 @@
   });
   $('#load-report').addEventListener('click', loadReports);
   $('#load-match-review').addEventListener('click', loadMatchReview);
+  $('#load-correction-review').addEventListener('click', loadCorrectionReview);
   $('#report-body').addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-match-id]');
+    const button = event.target.closest('[data-match-id], [data-correction-id]');
     if (!button) return;
     button.disabled = true;
     try {
-      await rpc('review_certificate_match', { requested_match_id: button.dataset.matchId, requested_decision: button.dataset.decision });
-      await loadMatchReview();
+      if (button.dataset.matchId) {
+        await rpc('review_certificate_match', { requested_match_id: button.dataset.matchId, requested_decision: button.dataset.decision });
+        await loadMatchReview();
+      } else {
+        await rpc('review_student_correction', { requested_correction_id: button.dataset.correctionId, requested_decision: button.dataset.decision, requested_note: null });
+        await loadCorrectionReview();
+      }
     } catch (error) { console.warn(error); setMessage('บันทึกการตัดสินไม่สำเร็จ กรุณาตรวจสอบสิทธิ์หรือรายการซ้ำ'); button.disabled = false; }
   });
   document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => downloadCsv(`dharma-${button.dataset.report}-${$('#report-year').value}.csv`, loadedReports[button.dataset.report] || [])));
