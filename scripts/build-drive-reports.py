@@ -112,6 +112,10 @@ def main() -> int:
     args = parser.parse_args()
     source_folder = required("DRIVE_SOURCE_FOLDER_ID")
     output_folder = required("DRIVE_OUTPUT_FOLDER_ID")
+    if source_folder == output_folder:
+        raise RuntimeError("โฟลเดอร์ต้นฉบับและโฟลเดอร์ผลลัพธ์ต้องเป็นคนละโฟลเดอร์")
+    if len(source_folder) < 10 or len(output_folder) < 10:
+        raise RuntimeError("Drive folder ID สั้นผิดปกติ ตรวจค่า Variables ก่อนเรียก workflow")
     drive = drive_client()
     template_name = LEVEL_TO_TEMPLATE[args.level]
     template = find_template(drive, source_folder, template_name)
@@ -132,6 +136,10 @@ def main() -> int:
         env = {**os.environ, "PYTHONUNBUFFERED": "1"}
         subprocess.run([sys.executable, str(worker), str(template_path), str(rows_path), str(output_path), "--year", args.year, "--level", args.level], check=True, env=env)
         result = upload(drive, output_path, output_folder, output_path.name)
+        verified = drive.files().get(fileId=result["id"], fields="id,name,mimeType,parents,size").execute()
+        if verified.get("name") != output_path.name or output_folder not in (verified.get("parents") or []):
+            raise RuntimeError("ตรวจสอบผลอัปโหลดแล้วไม่อยู่ในโฟลเดอร์ผลลัพธ์ที่กำหนด")
+        result["verified"] = {"id": verified.get("id"), "name": verified.get("name"), "parents": verified.get("parents"), "size": verified.get("size")}
     print(json.dumps({"status": "uploaded", "level": args.level, "rows": len(rows), "drive": result}, ensure_ascii=False))
     return 0
 
