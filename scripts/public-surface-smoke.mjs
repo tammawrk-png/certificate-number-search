@@ -48,7 +48,7 @@ assert.match(staffHtml, /data-brand="dharma"/);
 assert.match(staffHtml, /data-brand="school"/);
 assert.match(staffHtml, /id="google-login"/);
 assert.match(staffJs, /school_report_rows/);
-assert.match(staffJs, /mother_sangha_report_rows/);
+assert.match(staffJs, /mother_sangha_form_rows/);
 assert.match(staffJs, /certificate_match_review_rows/);
 assert.match(staffJs, /review_certificate_match/);
 assert.match(staffJs, /student_correction_review_rows/);

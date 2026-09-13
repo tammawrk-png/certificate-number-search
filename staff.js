@@ -30,9 +30,11 @@
       ['eligibility_status', 'สิทธิ์สอบ'], ['exam_room', 'ห้องสอบ'], ['seat_no', 'เลขที่สอบ'], ['result_status', 'ผลสอบ'], ['score', 'คะแนน'], ['follow_up_status', 'สถานะติดตาม'],
     ],
     ตรี: [
-      ['academic_year', 'ปีการศึกษา'], ['dhamma_level', 'ระดับธรรมศึกษา'], ['student_number', 'เลขประจำตัวนักเรียน'], ['full_name', 'ชื่อ-นามสกุล'],
-      ['education_band', 'สายการศึกษา'], ['grade_level', 'ชั้น'], ['room_no', 'ห้อง'], ['advisor_1', 'ครูที่ปรึกษา 1'], ['advisor_2', 'ครูที่ปรึกษา 2'],
-      ['eligibility_status', 'สิทธิ์สอบ'], ['exam_room', 'ห้องสอบ'], ['seat_no', 'เลขที่สอบ'], ['result_status', 'ผลสอบ'], ['score', 'คะแนน'],
+      ['form_sequence', 'เลขที่'], ['academic_year', 'ปีการศึกษา'], ['dhamma_level', 'ระดับธรรมศึกษา'], ['title', 'คำนำ'],
+      ['first_name', 'ชื่อ'], ['last_name', 'นามสกุล'], ['citizen_id', 'เลขที่บัตรประชาชน'], ['birth_date_be', 'เกิด วัน/เดือน/ปี'],
+      ['form_education_level', 'ระดับการศึกษา'], ['class_room', 'ชั้น/แผนก/ห้อง'], ['organization_name', 'ชื่อองค์กร'],
+      ['subdistrict', 'ตำบล'], ['district', 'อำเภอ'], ['province', 'จังหวัด'], ['temple_affiliation', 'สังกัดวัด'],
+      ['school_name', 'สนามสอบ/ชื่อองค์กร'], ['exam_site_code', 'รหัสสนามสอบ'], ['school_council', 'สำนักเรียน'], ['current_student_number', 'เลขประจำตัวโรงเรียน'],
     ],
     โท: [],
     เอก: [],
@@ -108,9 +110,9 @@
     try {
       const [school, tri, tho, ek] = await Promise.all([
         rpc('school_report_rows', { requested_year: year }),
-        rpc('mother_sangha_report_rows', { requested_year: year, requested_level: 'ตรี' }),
-        rpc('mother_sangha_report_rows', { requested_year: year, requested_level: 'โท' }),
-        rpc('mother_sangha_report_rows', { requested_year: year, requested_level: 'เอก' }),
+        rpc('mother_sangha_form_rows', { requested_year: year, requested_level: 'ตรี' }),
+        rpc('mother_sangha_form_rows', { requested_year: year, requested_level: 'โท' }),
+        rpc('mother_sangha_form_rows', { requested_year: year, requested_level: 'เอก' }),
       ]);
       loadedReports = { school, ตรี: tri, โท: tho, เอก: ek }; renderTable(school, `รายงานโรงเรียน · ปี ${year}`);
       document.querySelectorAll('.export-button').forEach((button) => { button.disabled = !loadedReports[button.dataset.report]?.length; });
