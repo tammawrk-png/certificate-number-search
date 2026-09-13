@@ -65,6 +65,14 @@
     stepIndicators.forEach((indicator) => indicator.classList.toggle('active', Number(indicator.dataset.stepIndicator) <= step));
     if (step === 3) updateSummary();
   };
+  const tabs = [...document.querySelectorAll('.tab')];
+  const syncActiveTab = () => {
+    const target = window.location.hash || '#dashboard';
+    tabs.forEach((tab) => tab.classList.toggle('active', new URL(tab.href).hash === target));
+  };
+  tabs.forEach((tab) => tab.addEventListener('click', () => window.setTimeout(syncActiveTab, 0)));
+  window.addEventListener('hashchange', syncActiveTab);
+  syncActiveTab();
   registrationForm.querySelectorAll('.wizard-next').forEach((button) => button.addEventListener('click', () => {
     const section = wizardSteps[currentStep - 1];
     const invalid = [...section.querySelectorAll('[required]')].find((field) => !field.checkValidity());
@@ -86,6 +94,8 @@
       return;
     }
     const form = new FormData(event.currentTarget);
+    const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
     message.textContent = 'กำลังตรวจสอบข้อมูล…';
     try {
       const response = await fetch(`${apiBase}/rest/v1/rpc/submit_public_registration`, {
@@ -105,6 +115,8 @@
     } catch (error) {
       console.warn(error);
       message.textContent = 'เชื่อมต่อระบบรับสมัครไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
+    } finally {
+      submitButton.disabled = false;
     }
   });
   $('#lookup-form').addEventListener('submit', async (event) => {
