@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [legacyHtml, activityHtml, activityJs, config] = await Promise.all([
+const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.js', import.meta.url), 'utf8'),
+  readFile(new URL('../staff.html', import.meta.url), 'utf8'),
+  readFile(new URL('../staff.js', import.meta.url), 'utf8'),
   readFile(new URL('../config.js', import.meta.url), 'utf8'),
 ]);
 
@@ -17,6 +19,11 @@ assert.match(activityJs, /public_dashboard_metrics_v2/);
 assert.match(activityJs, /submit_public_registration_v2/);
 assert.match(activityJs, /lookup_public_exam_status/);
 assert.match(activityJs, /public_registration_window_status/);
+assert.match(staffHtml, /id="login-form"/);
+assert.match(staffHtml, /id="workspace"/);
+assert.match(staffJs, /school_report_rows/);
+assert.match(staffJs, /mother_sangha_report_rows/);
+assert.match(staffJs, /sessionStorage/);
 assert.doesNotMatch(config, /(?:service[-_ ]role|client_secret|private_key)\s*[:=]/i);
 assert.match(config, /publishableKey:\s*null/);
 
