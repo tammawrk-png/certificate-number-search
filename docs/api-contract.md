@@ -10,6 +10,7 @@
 
 - `school_report_rows(year)` returns the school tracking rows with grade, room, advisor(s), matching, registration, official eligibility, seat, result, and follow-up state.
 - `mother_sangha_report_rows(year, level)` returns one level at a time for filling a copy of the unchanged Mother Sangha workbook.
+- `mother_sangha_form_rows_v2(year, level)` returns the exact per-level field contract, including prior certificate fields required by the โท/เอก forms. It is staff-only and returns submitted/verified registrations.
 - `apply_official_exam_import_batch(batch_id)` applies staff-reviewed official eligibility/seat/result staging rows idempotently; unmatched rows remain review.
 - `certificate_pickup_report_rows_v2(year)` returns historical certificates still awaiting pickup with the current student's grade, room, and advisors; it is staff-only.
 - `update_certificate_pickup_status(certificate_id, status, note)` records an audited staff status change (`pending`, `notified`, `claimed`, or `not_applicable`). It never writes to Firebase.

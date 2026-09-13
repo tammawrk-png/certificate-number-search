@@ -34,7 +34,9 @@
       ['first_name', 'ชื่อ'], ['last_name', 'นามสกุล'], ['citizen_id', 'เลขที่บัตรประชาชน'], ['birth_date_be', 'เกิด วัน/เดือน/ปี'],
       ['form_education_level', 'ระดับการศึกษา'], ['class_room', 'ชั้น/แผนก/ห้อง'], ['organization_name', 'ชื่อองค์กร'],
       ['subdistrict', 'ตำบล'], ['district', 'อำเภอ'], ['province', 'จังหวัด'], ['temple_affiliation', 'สังกัดวัด'],
-      ['school_name', 'สนามสอบ/ชื่อองค์กร'], ['exam_site_code', 'รหัสสนามสอบ'], ['school_council', 'สำนักเรียน'], ['current_student_number', 'เลขประจำตัวโรงเรียน'],
+      ['school_name', 'สนามสอบ/ชื่อองค์กร'], ['exam_site_code', 'รหัสสนามสอบ'], ['school_council', 'สำนักเรียน'],
+      ['previous_certificate_year', 'ประโยคเดิม พ.ศ.'], ['previous_certificate_no', 'เลขที่ ปกศ.'], ['previous_school_council', 'สำนักเรียนเดิม/คณะจังหวัด'],
+      ['current_student_number', 'เลขประจำตัวโรงเรียน'],
     ],
     โท: [],
     เอก: [],
@@ -110,9 +112,9 @@
     try {
       const [school, tri, tho, ek] = await Promise.all([
         rpc('school_report_rows', { requested_year: year }),
-        rpc('mother_sangha_form_rows', { requested_year: year, requested_level: 'ตรี' }),
-        rpc('mother_sangha_form_rows', { requested_year: year, requested_level: 'โท' }),
-        rpc('mother_sangha_form_rows', { requested_year: year, requested_level: 'เอก' }),
+        rpc('mother_sangha_form_rows_v2', { requested_year: year, requested_level: 'ตรี' }),
+        rpc('mother_sangha_form_rows_v2', { requested_year: year, requested_level: 'โท' }),
+        rpc('mother_sangha_form_rows_v2', { requested_year: year, requested_level: 'เอก' }),
       ]);
       loadedReports = { school, ตรี: tri, โท: tho, เอก: ek }; renderTable(school, `รายงานโรงเรียน · ปี ${year}`);
       document.querySelectorAll('.export-button').forEach((button) => { button.disabled = !loadedReports[button.dataset.report]?.length; });
