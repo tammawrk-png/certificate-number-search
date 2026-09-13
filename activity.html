@@ -6,15 +6,27 @@
     <meta name="theme-color" content="#0f766e" />
     <meta name="description" content="ระบบกิจกรรมธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา" />
     <title>ระบบกิจกรรมธรรมศึกษา</title>
-    <link rel="stylesheet" href="activity.css?v=20260913-5" />
+    <link rel="stylesheet" href="activity.css?v=20260913-6" />
   </head>
   <body>
     <main class="activity-shell">
       <header class="activity-header">
-        <a class="back-link" href="index.html">← ค้นเลขใบประกาศ</a>
-        <p class="eyebrow">งานธรรมศึกษา · โรงเรียนวัดไร่ขิงวิทยา</p>
-        <h1>ระบบกิจกรรมธรรมศึกษา</h1>
-        <p>จัดการรายชื่อ สมัครสอบ ติดตามประกาศ และจัดทำรายงานในระบบเดียว</p>
+        <div class="header-topline"><a class="back-link" href="index.html">← ค้นเลขใบประกาศ</a><span class="live-badge"><i></i> ระบบกลางสนามสอบ</span></div>
+        <div class="header-content">
+          <div>
+            <p class="eyebrow">งานธรรมศึกษา · โรงเรียนวัดไร่ขิงวิทยา</p>
+            <h1>สมัครสอบให้เรียบร้อย<br /><em>ในไม่กี่ขั้นตอน</em></h1>
+            <p class="header-lead">กรอกเลขประจำตัวกับชื่อ ระบบจะตรวจข้อมูลจากทะเบียนโรงเรียนและจัดชั้น ห้อง และครูที่ปรึกษาให้อัตโนมัติ</p>
+            <div class="header-actions"><a class="header-action primary-action" href="#register">เริ่มสมัครสอบ <span>↗</span></a><a class="header-action ghost-action" href="#lookup">ตรวจสอบประกาศ</a></div>
+          </div>
+          <aside class="process-card" aria-label="วิธีใช้งาน">
+            <span class="process-label">ใช้งานอย่างไร</span>
+            <div class="process-line"><b>01</b><span>เลือกสายและระดับ</span></div>
+            <div class="process-line"><b>02</b><span>ยืนยันด้วยเลขประจำตัว</span></div>
+            <div class="process-line"><b>03</b><span>ตรวจทาน แล้วรับเลขอ้างอิง</span></div>
+            <small>ไม่ต้องสร้างบัญชี และไม่ต้องกรอกห้องเรียนเอง</small>
+          </aside>
+        </div>
       </header>
 
       <nav class="tabs" aria-label="เมนูระบบ">
@@ -25,7 +37,7 @@
       </nav>
 
       <section id="dashboard" class="panel">
-        <div class="panel-heading"><div><span class="kicker">Dashboard สาธารณะ</span><h2>ภาพรวมการดำเนินงาน</h2></div><span id="metrics-state" class="state pending">รอข้อมูลระบบ</span></div>
+        <div class="panel-heading"><div><span class="kicker">ข้อมูลสาธารณะ</span><h2>ภาพรวมสนามสอบ</h2><p class="panel-lead">ตัวเลขรวมสำหรับติดตามความคืบหน้า โดยไม่เปิดเผยข้อมูลส่วนบุคคล</p></div><span id="metrics-state" class="state pending">รอข้อมูลระบบ</span></div>
         <div class="metric-grid">
           <article class="metric"><span>นักเรียนปัจจุบัน</span><strong id="metric-students">—</strong><small>รายชื่อที่นำเข้าแล้ว</small></article>
           <article class="metric"><span>จับคู่ประวัติแล้ว</span><strong id="metric-matched">—</strong><small>ต้องตรวจสอบก่อนยืนยัน</small></article>
@@ -36,7 +48,7 @@
       </section>
 
       <section id="register" class="panel">
-        <div class="panel-heading registration-heading"><div><span class="kicker">สมัครสอบออนไลน์</span><h2>สมัครง่าย ไม่ต้องสร้างบัญชี</h2><p class="panel-lead">ใช้เลขประจำตัวนักเรียนเพื่อดึงข้อมูลจากทะเบียนโรงเรียน แล้วตรวจสอบก่อนส่งใบสมัคร</p></div><span class="state pending">เตรียมเปิดรับสมัคร</span></div>
+        <div class="panel-heading registration-heading"><div><span class="kicker">สมัครสอบออนไลน์</span><h2>ข้อมูลของคุณจะถูกแยกอย่างไร?</h2><p class="panel-lead">ระบบใช้เลขประจำตัวนักเรียนเป็นกุญแจหลัก แล้วจับคู่กับชื่อในทะเบียน จึงไม่ต้องเข้าสู่ระบบและไม่ต้องกรอกชั้นหรือห้องเอง</p></div><span class="state pending">เตรียมเปิดรับสมัคร</span></div>
         <div class="registration-benefits" aria-label="จุดเด่นการสมัคร">
           <span><b>01</b> กรอกสั้น</span><span><b>02</b> ตรวจข้อมูลก่อนส่ง</span><span><b>03</b> ไม่ต้องจำรหัสผ่าน</span>
         </div>
@@ -55,7 +67,7 @@
           </section>
           <section class="wizard-step" data-step="2" hidden>
             <div class="step-title"><span class="step-icon">⌕</span><div><span class="kicker">ขั้นที่ 2 จาก 3</span><h3>ยืนยันว่าเป็นใคร</h3></div></div>
-            <div class="identity-tip"><strong>ไม่ต้องเข้าสู่ระบบ</strong><span>กรอกเลขประจำตัวและชื่อให้ตรงกับทะเบียนนักเรียน ระบบจะแยกข้อมูลตามชั้นและห้องให้อัตโนมัติ</span></div>
+            <div class="identity-tip"><span class="tip-icon">✓</span><div><strong>ยืนยันตัวตนแบบไม่ต้องมีบัญชี</strong><span>กรอกเลขประจำตัวและชื่อให้ตรงกับทะเบียนนักเรียน ระบบจะดึงชั้น ห้อง และครูที่ปรึกษาจากฐานข้อมูลกลางให้เอง</span></div></div>
             <div class="form-grid identity-grid">
               <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="เช่น 12345" /></label>
               <label>ชื่อ-นามสกุล<input name="fullName" autocomplete="name" required placeholder="เช่น เด็กชายสมชาย ใจดี" /></label>
