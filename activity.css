@@ -25,7 +25,7 @@ body { margin: 0; background: radial-gradient(circle at 100% 0, #ede9fe 0, trans
 .back-link { color: #ede9fe; text-decoration: none; font-weight: 700; }
 .live-badge { display: inline-flex; align-items: center; gap: 8px; color: #dbeafe; font-size: .78rem; font-weight: 800; }
 .live-badge i { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 5px rgba(52,211,153,.15); }
-.header-content { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 42px; align-items: end; margin-top: 48px; }
+.header-content { display: grid; grid-template-columns: 150px minmax(0, 1fr) 300px; gap: 28px; align-items: center; margin-top: 42px; }
 .eyebrow, .kicker { font-size: .77rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .eyebrow { margin: 0 0 14px; color: #c4b5fd; }
 .activity-header h1 { max-width: 700px; font-size: clamp(2.15rem, 5vw, 4rem); line-height: 1.08; letter-spacing: -.035em; margin: 0 0 16px; }
@@ -157,8 +157,7 @@ footer { display: flex; justify-content: space-between; gap: 12px; color: #66708
   .summary-row { display: grid; gap: 3px; }
   .summary-row strong { text-align: left; }
 }
-.brand-lockup { display: flex; align-items: center; gap: 14px; }
-.logo-pair { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border: 1px solid rgba(255,255,255,.35); border-radius: 15px; background: rgba(255,255,255,.12); }
-.school-logo, .dharma-logo { display: block; width: 48px; height: 48px; object-fit: contain; border-radius: 10px; background: #fff; padding: 4px; }
-.dharma-logo { width: 43px; height: 43px; padding: 6px; }
-@media (max-width: 700px) { .brand-lockup { align-items: flex-start; gap: 9px; } .logo-pair { padding: 5px 6px; gap: 5px; } .school-logo, .dharma-logo { width: 37px; height: 37px; padding: 3px; } .dharma-logo { width: 34px; height: 34px; padding: 5px; } }
+.logo-pair { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 20px; background: rgba(255,255,255,.12); }
+.school-logo, .dharma-logo { display: block; width: 62px; height: 62px; object-fit: contain; border-radius: 14px; background: #fff; padding: 6px; }
+@media (max-width: 900px) { .header-content { grid-template-columns: 130px minmax(0, 1fr) 270px; gap: 20px; } .school-logo, .dharma-logo { width: 54px; height: 54px; } }
+@media (max-width: 700px) { .header-content { display: block; margin-top: 34px; } .logo-pair { width: max-content; margin-bottom: 17px; padding: 7px; border-radius: 16px; } .school-logo, .dharma-logo { width: 50px; height: 50px; padding: 5px; } }
