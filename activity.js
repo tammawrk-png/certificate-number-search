@@ -18,7 +18,7 @@
       return;
     }
     try {
-      const response = await fetch(`${config.url.replace(/\/$/, '')}/rest/v1/rpc/public_dashboard_metrics`, {
+      const response = await fetch(`${config.url.replace(/\/$/, '')}/rest/v1/rpc/public_dashboard_metrics_v2`, {
         method: 'POST',
         headers: { apikey: config.publishableKey, 'Content-Type': 'application/json' },
         body: '{}',
