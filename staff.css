@@ -10,6 +10,7 @@
 .toast-region{position:fixed;right:18px;bottom:18px;z-index:20;max-width:min(420px,calc(100% - 36px))}
 .toast{padding:13px 16px;border:1px solid #f5b8bd;border-radius:13px;color:#881337;background:#fff1f2;box-shadow:0 12px 30px #19324a26;font-weight:800}
 .workspace,.toolbar,.export-grid,.table-card{width:100%;min-width:0}
+.workspace[hidden],#google-login-panel[hidden],#staff-access-gate[hidden]{display:none}
 .export-card{min-width:0}
 .table-wrap{max-width:100%}
 @media(max-width:560px){.staff-shell{width:100%;padding-left:10px;padding-right:10px}.export-card{padding:15px}.table-card{padding:13px}.table-wrap table{min-width:760px}}
