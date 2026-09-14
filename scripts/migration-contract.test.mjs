@@ -6,7 +6,7 @@ import { join } from 'node:path';
 const root = new URL('../supabase/migrations/', import.meta.url);
 const rootPath = fileURLToPath(root);
 const names = (await readdir(rootPath)).filter((name) => name.endsWith('.sql')).sort();
-const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028', '0029'];
+const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028', '0029', '0030'];
 assert.deepEqual(names.map((name) => name.slice(0, 4)), expected);
 
 const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28, m29] = await Promise.all([
