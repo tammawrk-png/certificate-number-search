@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f4f85" />
     <meta name="description" content="พื้นที่ทำงานเจ้าหน้าที่ ระบบกิจกรรมธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา" />
     <title>พื้นที่เจ้าหน้าที่ · ระบบกิจกรรมธรรมศึกษา</title>
-    <link rel="stylesheet" href="staff.css?v=20260913-8" />
+    <link rel="stylesheet" href="staff.css?v=20260914-1" />
   </head>
   <body>
     <main class="staff-shell">
@@ -19,13 +19,26 @@
       </header>
 
       <section id="login-panel" class="card login-card">
+        <div id="staff-access-gate">
+          <span class="kicker">พื้นที่เฉพาะเจ้าหน้าที่</span>
+          <h2>ยืนยันรหัสก่อนเข้าสู่ระบบ</h2>
+          <p>หน้านี้แยกจากหน้าสมัครสอบนักเรียน กรุณากดรหัส 4 หลักก่อนเข้าสู่การยืนยันด้วย Google</p>
+          <form id="staff-pin-form" class="login-form">
+            <label for="staff-pin">รหัสเข้าพื้นที่เจ้าหน้าที่</label>
+            <input id="staff-pin" class="input" type="password" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]{4}" required />
+            <button class="primary" type="submit">ถัดไป</button>
+          </form>
+          <p class="security-note">รหัสนี้เป็นเพียงด่านแยกหน้าจอ การเปิดข้อมูลจริงยังต้องผ่าน Google และ `staff_roles` ในระบบ</p>
+        </div>
+        <div id="google-login-panel" hidden>
         <span class="kicker">เข้าสู่พื้นที่เจ้าหน้าที่</span>
         <h2>ยืนยันสิทธิ์ด้วย Google</h2>
-        <p>ใช้บัญชี Google ขององค์กรที่ลงท้ายด้วย <strong>@wrk.ac.th</strong> ระบบจะตรวจสิทธิ์ซ้ำกับ `staff_roles` ก่อนเปิดข้อมูล</p>
+        <p>ใช้บัญชี Google ที่เจ้าหน้าที่ได้รับสิทธิ์ ระบบจะตรวจซ้ำกับ `staff_roles` ก่อนเปิดข้อมูล ไม่ตัดสินจากโดเมนอีเมลเพียงอย่างเดียว</p>
         <form id="login-form" class="login-form">
           <button id="google-login" class="primary google-login" type="submit"><span class="google-mark">G</span> เข้าสู่ระบบด้วย Google</button>
         </form>
         <p id="login-message" class="message" role="status"></p>
+        </div>
       </section>
 
       <section id="workspace" class="workspace" hidden>
@@ -39,18 +52,19 @@
           <span id="report-message" class="message" role="status"></span>
         </div>
         <div class="export-grid">
-          <article class="export-card card"><span class="export-icon">โรงเรียน</span><h3>รายงานโรงเรียน</h3><p>ชั้น ห้อง ครูที่ปรึกษา การจับคู่ ระดับสมัคร และสถานะติดตามรายคน</p><button class="secondary export-button" data-report="school" type="button" disabled>ดาวน์โหลด CSV</button></article>
-          <article class="export-card card"><span class="export-icon blue">ตรี</span><h3>ข้อมูลแม่กองธรรม · ตรี</h3><p>ฟิลด์ตามต้นฉบับระดับตรี แยกจากระดับอื่น ใช้ JSON นี้เติมลงในสำเนา `.xls` ได้</p><button class="secondary export-button" data-report="ตรี" data-format="json" type="button" disabled>ดาวน์โหลด JSON เติมแบบ</button><button class="secondary export-button export-csv" data-report="ตรี" type="button" disabled>ดาวน์โหลด CSV ตรวจสอบ</button></article>
-          <article class="export-card card"><span class="export-icon gold">โท</span><h3>ข้อมูลแม่กองธรรม · โท</h3><p>ฟิลด์ตามต้นฉบับระดับโท พร้อมประโยคเดิม แยกจากระดับอื่น</p><button class="secondary export-button" data-report="โท" data-format="json" type="button" disabled>ดาวน์โหลด JSON เติมแบบ</button><button class="secondary export-button export-csv" data-report="โท" type="button" disabled>ดาวน์โหลด CSV ตรวจสอบ</button></article>
-          <article class="export-card card"><span class="export-icon violet">เอก</span><h3>ข้อมูลแม่กองธรรม · เอก</h3><p>ฟิลด์ตามต้นฉบับระดับเอก พร้อมประโยคเดิม แยกจากระดับอื่น</p><button class="secondary export-button" data-report="เอก" data-format="json" type="button" disabled>ดาวน์โหลด JSON เติมแบบ</button><button class="secondary export-button export-csv" data-report="เอก" type="button" disabled>ดาวน์โหลด CSV ตรวจสอบ</button></article>
-          <article class="export-card card"><span class="export-icon gold">รับ</span><h3>ใบประกาศค้างรับ</h3><p>แยกชั้น ห้อง และครูที่ปรึกษา เพื่อแจ้งนักเรียนหรือส่งต่อให้ครูประจำห้อง</p><button class="secondary export-button" data-report="pickup" type="button" disabled>ดาวน์โหลด CSV</button></article>
+          <article class="export-card card"><span class="export-icon">โรงเรียน</span><h3>รายงานโรงเรียน</h3><p>ชั้น ห้อง ครูที่ปรึกษา การจับคู่ ระดับสมัคร และสถานะติดตามรายคน</p><button class="secondary export-button" data-report="school" type="button" disabled>ดาวน์โหลด CSV (Excel)</button><button class="secondary print-button" data-report="school" type="button" disabled>พิมพ์รายงาน</button></article>
+          <article class="export-card card"><span class="export-icon blue">ตรี</span><h3>ข้อมูลแม่กองธรรม · ตรี</h3><p>ฟิลด์ตามต้นฉบับระดับตรี ดาวน์โหลดเป็น CSV เพื่อเปิดใน Excel และเติมในสำเนาแบบเดิม</p><button class="secondary export-button" data-report="ตรี" type="button" disabled>ดาวน์โหลด CSV (Excel)</button><button class="secondary print-button" data-report="ตรี" type="button" disabled>พิมพ์รายงาน</button></article>
+          <article class="export-card card"><span class="export-icon gold">โท</span><h3>ข้อมูลแม่กองธรรม · โท</h3><p>ฟิลด์ตามต้นฉบับระดับโท พร้อมประโยคเดิม แยกจากระดับอื่น</p><button class="secondary export-button" data-report="โท" type="button" disabled>ดาวน์โหลด CSV (Excel)</button><button class="secondary print-button" data-report="โท" type="button" disabled>พิมพ์รายงาน</button></article>
+          <article class="export-card card"><span class="export-icon violet">เอก</span><h3>ข้อมูลแม่กองธรรม · เอก</h3><p>ฟิลด์ตามต้นฉบับระดับเอก พร้อมประโยคเดิม แยกจากระดับอื่น</p><button class="secondary export-button" data-report="เอก" type="button" disabled>ดาวน์โหลด CSV (Excel)</button><button class="secondary print-button" data-report="เอก" type="button" disabled>พิมพ์รายงาน</button></article>
+          <article class="export-card card"><span class="export-icon gold">รับ</span><h3>ใบประกาศค้างรับ</h3><p>แยกชั้น ห้อง และครูที่ปรึกษา เพื่อแจ้งนักเรียนหรือส่งต่อให้ครูประจำห้อง</p><button class="secondary export-button" data-report="pickup" type="button" disabled>ดาวน์โหลด CSV (Excel)</button><button class="secondary print-button" data-report="pickup" type="button" disabled>พิมพ์รายงาน</button></article>
         </div>
-        <section class="card table-card"><div class="table-heading"><div><span class="kicker">ตัวอย่างข้อมูล</span><h3 id="table-title">ยังไม่ได้โหลดรายงาน</h3></div><span id="row-count" class="count-badge">0 รายการ</span></div><div class="table-wrap"><table><thead id="report-head"></thead><tbody id="report-body"><tr><td class="empty" colspan="8">กด “โหลดข้อมูลรายงาน” หลังเข้าสู่ระบบ</td></tr></tbody></table></div><p class="table-note">แสดงตัวอย่าง 100 แถวแรกเพื่อความเร็ว ไฟล์ JSON/CSV จะดาวน์โหลดข้อมูลครบทุกแถวตามปุ่มที่เลือก</p></section>
+        <section class="card table-card"><div class="table-heading"><div><span class="kicker">ตัวอย่างข้อมูล</span><h3 id="table-title">ยังไม่ได้โหลดรายงาน</h3></div><span id="row-count" class="count-badge">0 รายการ</span></div><div class="table-wrap"><table><thead id="report-head"></thead><tbody id="report-body"><tr><td class="empty" colspan="8">กด “โหลดข้อมูลรายงาน” หลังเข้าสู่ระบบ</td></tr></tbody></table></div><p class="table-note">แสดงตัวอย่าง 100 แถวแรกเพื่อความเร็ว ส่วน CSV และหน้าพิมพ์จะแสดงข้อมูลครบทุกแถวตามรายงานที่เลือก</p></section>
       </section>
+      <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
       <footer>งานธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา · ข้อมูลรายงานอยู่ภายใต้สิทธิ์เจ้าหน้าที่</footer>
     </main>
     <script src="assets.js?v=20260814-logos2"></script><script src="config.js?v=20260913-staff-5"></script>
     <script>window.APP_CONFIG=window.APP_CONFIG||{supabase:{url:'https://jmlcsrmrtghmnpdpfdcf.supabase.co',publishableKey:'sb_publishable_ZyZtx2b_wS6XA-PmN5L5cQ_J6WiYrJG'}};</script>
-    <script src="staff.js?v=20260913-12"></script>
+    <script src="staff.js?v=20260914-1"></script>
   </body>
 </html>

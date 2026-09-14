@@ -8,13 +8,24 @@
     publishableKey: configuredSupabase.publishableKey || 'sb_publishable_ZyZtx2b_wS6XA-PmN5L5cQ_J6WiYrJG',
   };
   const apiBase = config?.url?.replace(/\/$/, '');
-  const allowedDomain = '@wrk.ac.th';
   let accessToken = sessionStorage.getItem('dharma_staff_access_token') || '';
   let loadedReports = { school: [], match: [], corrections: [], pickup: [], ตรี: [], โท: [], เอก: [] };
   const headers = () => ({ apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
-  const setMessage = (text) => { $('#login-message').textContent = text; $('#report-message').textContent = text; };
+  const setMessage = (text) => {
+    const target = $('#workspace').hidden ? $('#login-message') : $('#report-message');
+    if (target) target.textContent = text;
+  };
+  const showToast = (text, tone = 'error') => {
+    const region = $('#toast-region');
+    if (!region) return;
+    region.replaceChildren();
+    const toast = document.createElement('div');
+    toast.className = `toast ${tone}`;
+    toast.textContent = text;
+    region.append(toast);
+    window.setTimeout(() => toast.remove(), 5200);
+  };
   const showWorkspace = (visible) => { $('#login-panel').hidden = visible; $('#workspace').hidden = !visible; };
-  const isAllowedStaffEmail = (email) => String(email || '').trim().toLowerCase().endsWith(allowedDomain);
   const csvEscape = (value) => {
     const text = String(value ?? '');
     // Prevent spreadsheet formula injection when a CSV is opened in Excel.
@@ -60,12 +71,18 @@
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
   };
-  const downloadJson = (name, rows) => {
-    if (!rows.length) return;
-    const url = URL.createObjectURL(new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json;charset=utf-8' }));
-    const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
-  };
   const escapeHtml = (value) => String(value ?? '—').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const printReport = (reportKey) => {
+    const rows = loadedReports[reportKey] || [];
+    if (!rows.length) return showToast('ยังไม่มีข้อมูลสำหรับพิมพ์รายงาน');
+    const columns = (reportColumns[reportKey] || Object.keys(rows[0]).map((key) => [key, key]))
+      .filter(([key]) => Object.prototype.hasOwnProperty.call(rows[0], key));
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) return showToast('เปิดหน้าพิมพ์ไม่ได้ กรุณาอนุญาต pop-up สำหรับเว็บไซต์นี้');
+    const title = reportKey === 'school' ? 'รายงานโรงเรียน' : reportKey === 'pickup' ? 'ใบประกาศค้างรับ' : `ข้อมูลแม่กองธรรม · ${reportKey}`;
+    printWindow.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#19324a}h1{font-size:20px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #b8c9d6;padding:5px;text-align:left;vertical-align:top}th{background:#eaf5ff}</style></head><body><h1>${escapeHtml(title)} · ปี ${escapeHtml($('#report-year').value)}</h1><table><thead><tr>${columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${columns.map(([key]) => `<td>${escapeHtml(row[key])}</td>`).join('')}</tr>`).join('')}</tbody></table><script>window.onload=()=>window.print();</script></body></html>`);
+    printWindow.document.close();
+  };
   const renderTable = (rows, title, actions = false) => {
     const head = $('#report-head'); const body = $('#report-body'); $('#table-title').textContent = title; $('#row-count').textContent = `${rows.length.toLocaleString('th-TH')} รายการ`;
     if (!rows.length) { head.innerHTML = ''; body.innerHTML = '<tr><td class="empty" colspan="8">ไม่พบข้อมูลสำหรับรายงานนี้</td></tr>'; return; }
@@ -83,7 +100,7 @@
       loadedReports.corrections = corrections;
       renderTable(corrections, `คำขอแก้ไขข้อมูล · ปี ${year}`, true);
       setMessage(`พบคำขอรอตรวจ ${corrections.length.toLocaleString('th-TH')} รายการ`);
-    } catch (error) { console.warn(error); setMessage('โหลดคำขอแก้ไขไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    } catch (error) { console.warn(error); showToast('โหลดคำขอแก้ไขไม่สำเร็จ กรุณาตรวจสิทธิ์เจ้าหน้าที่แล้วลองใหม่'); }
     finally { $('#load-correction-review').disabled = false; }
   };
   const loadPickupReport = async () => {
@@ -92,10 +109,9 @@
       const pickup = await rpc('certificate_pickup_report_rows_v2', { requested_year: year });
       loadedReports.pickup = pickup;
       renderTable(pickup, `ใบประกาศค้างรับ · ปี ${year}`, 'pickup');
-      const exportButton = document.querySelector('.export-button[data-report="pickup"]');
-      if (exportButton) exportButton.disabled = !pickup.length;
+      document.querySelectorAll('[data-report="pickup"].export-button,[data-report="pickup"].print-button').forEach((button) => { button.disabled = !pickup.length; });
       setMessage(`พบใบประกาศค้างรับ ${pickup.length.toLocaleString('th-TH')} รายการ`);
-    } catch (error) { console.warn(error); setMessage('โหลดรายงานใบประกาศค้างรับไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    } catch (error) { console.warn(error); showToast('โหลดรายงานใบประกาศค้างรับไม่สำเร็จ กรุณาลองใหม่ภายหลัง'); }
     finally { $('#load-pickup-report').disabled = false; }
   };
   const loadMatchReview = async () => {
@@ -105,7 +121,7 @@
       loadedReports.match = match;
       renderTable(match, `คิวตรวจจับคู่ชื่อซ้ำ · ปี ${year}`, true);
       setMessage(`พบรายการรอตรวจ ${match.length.toLocaleString('th-TH')} รายการ`);
-    } catch (error) { console.warn(error); setMessage('โหลดคิวจับคู่ไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    } catch (error) { console.warn(error); showToast('โหลดคิวจับคู่ไม่สำเร็จ กรุณาตรวจสิทธิ์เจ้าหน้าที่แล้วลองใหม่'); }
     finally { $('#load-match-review').disabled = false; }
   };
   const rpc = async (name, body) => {
@@ -123,11 +139,19 @@
         rpc('mother_sangha_form_rows_v3', { requested_year: year, requested_level: 'เอก' }),
       ]);
       loadedReports = { school, ตรี: tri, โท: tho, เอก: ek }; renderTable(school, `รายงานโรงเรียน · ปี ${year}`);
-      document.querySelectorAll('.export-button').forEach((button) => { button.disabled = !loadedReports[button.dataset.report]?.length; });
+      document.querySelectorAll('.export-button,.print-button').forEach((button) => { button.disabled = !loadedReports[button.dataset.report]?.length; });
       setMessage('โหลดข้อมูลรายงานแล้ว');
-    } catch (error) { console.warn(error); setMessage('โหลดรายงานไม่สำเร็จ หรือบัญชีนี้ยังไม่มี staff role'); }
+    } catch (error) { console.warn(error); showToast('โหลดรายงานไม่สำเร็จ กรุณาตรวจสิทธิ์เจ้าหน้าที่แล้วลองใหม่'); }
     finally { $('#load-report').disabled = false; }
   };
+  const staffAccessPin = '1234';
+  const showGoogleLogin = () => { $('#staff-access-gate').hidden = true; $('#google-login-panel').hidden = false; };
+  $('#staff-pin-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    if ($('#staff-pin').value.trim() !== staffAccessPin) { showToast('รหัสเข้าพื้นที่เจ้าหน้าที่ไม่ถูกต้อง'); $('#staff-pin').select(); return; }
+    sessionStorage.setItem('dharma_staff_gate', '1'); showGoogleLogin(); setMessage('กรุณายืนยันด้วยบัญชี Google ของเจ้าหน้าที่');
+  });
+  if (sessionStorage.getItem('dharma_staff_gate') === '1') showGoogleLogin();
   $('#login-form').addEventListener('submit', (event) => {
     event.preventDefault();
     if (!apiBase || !config?.publishableKey) { setMessage('ยังไม่ได้เชื่อม Supabase publishable key'); return; }
@@ -159,22 +183,24 @@
   document.querySelectorAll('.export-button').forEach((button) => button.addEventListener('click', () => {
     const rows = loadedReports[button.dataset.report] || [];
     const year = $('#report-year').value;
-    if (button.dataset.format === 'json') downloadJson(`dharma-${button.dataset.report}-${year}.json`, rows);
-    else downloadCsv(`dharma-${button.dataset.report}-${year}.csv`, rows, button.dataset.report);
+    downloadCsv(`dharma-${button.dataset.report}-${year}.csv`, rows, button.dataset.report);
   }));
-  $('#sign-out').addEventListener('click', () => { sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false); });
+  document.querySelectorAll('.print-button').forEach((button) => button.addEventListener('click', () => printReport(button.dataset.report)));
+  $('#sign-out').addEventListener('click', () => { sessionStorage.removeItem('dharma_staff_access_token'); sessionStorage.removeItem('dharma_staff_gate'); accessToken = ''; showWorkspace(false); $('#staff-access-gate').hidden = false; $('#google-login-panel').hidden = true; });
   const validateSession = async () => {
+    if (sessionStorage.getItem('dharma_staff_gate') !== '1') { showWorkspace(false); return; }
     if (!accessToken || !apiBase || !config?.publishableKey) { showWorkspace(false); return; }
     try {
       const response = await fetch(`${apiBase}/auth/v1/user`, { headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}` } });
       if (!response.ok) throw new Error(`session user request failed: ${response.status}`);
       const user = await response.json();
-      if (!isAllowedStaffEmail(user.email)) throw new Error('STAFF_DOMAIN_REQUIRED');
+      const staffRole = await rpc('is_staff', {});
+      if (staffRole !== true) throw new Error('STAFF_ROLE_REQUIRED');
       showWorkspace(true);
-      setMessage(`เข้าสู่ระบบแล้ว: ${user.email} · ระบบจะตรวจ staff role เมื่อโหลดข้อมูล`);
+      setMessage(`เข้าสู่ระบบแล้ว: ${user.email} · ยืนยัน staff role แล้ว`);
     } catch (error) {
       console.warn(error); sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false);
-      setMessage(error.message === 'STAFF_DOMAIN_REQUIRED' ? 'บัญชีนี้ไม่ใช่อีเมลองค์กร @wrk.ac.th' : 'ยืนยันบัญชี Google ไม่สำเร็จ กรุณาลองใหม่');
+      setMessage(error.message === 'STAFF_ROLE_REQUIRED' ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์เจ้าหน้าที่จาก staff_roles' : 'ยืนยันบัญชี Google ไม่สำเร็จ กรุณาลองใหม่');
     }
   };
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
