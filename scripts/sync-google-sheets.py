@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import datetime, timezone
 
 import requests
 from google.oauth2 import service_account
@@ -104,18 +103,9 @@ def sync_one(sheets, level: str, rows: list[dict]) -> None:
 
 
 def set_queue(base: str, key: str, year: str, state: str, error: str | None = None) -> None:
-    years = api(base, key, f"academic_years?year_be=eq.{year}&select=id")
-    if not years:
-        return
-    year_id = years[0]["id"]
-    api(
-        base,
-        key,
-        f"google_sheet_sync_queue?academic_year_id=eq.{year_id}",
-        "PATCH",
-        params={"select": "id"},
-        json={"state": state, "last_error": error, "completed_at": datetime.now(timezone.utc).isoformat() if state == "complete" else None},
-    )
+    api(base, key, "rpc/mark_google_sheet_sync", "POST", json={
+        "requested_year": year, "requested_state": state, "requested_error": error,
+    })
 
 
 def main() -> int:

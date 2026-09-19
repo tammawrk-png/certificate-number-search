@@ -295,3 +295,24 @@ as $$
 $$;
 revoke all on function public.mother_sangha_form_rows_v4(text,text) from public;
 grant execute on function public.mother_sangha_form_rows_v4(text,text) to authenticated, service_role;
+
+create or replace function public.mark_google_sheet_sync(requested_year text, requested_state text, requested_error text default null)
+returns boolean
+language plpgsql security definer set search_path = public
+as $$
+declare year_id uuid;
+begin
+  select id into year_id from public.academic_years where year_be = trim(requested_year) limit 1;
+  if year_id is null then return false; end if;
+  update public.google_sheet_sync_queue
+  set state = requested_state,
+      last_error = requested_error,
+      attempts = case when requested_state = 'running' then attempts + 1 else attempts end,
+      completed_at = case when requested_state = 'complete' then now() else null end,
+      requested_at = now()
+  where academic_year_id = year_id;
+  return found;
+end;
+$$;
+revoke all on function public.mark_google_sheet_sync(text,text,text) from public;
+grant execute on function public.mark_google_sheet_sync(text,text,text) to service_role;
