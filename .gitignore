@@ -5,3 +5,6 @@ node_modules/
 
 # Local Firebase snapshots contain historical PII and must never enter Git.
 firebase-import.json
+
+# Local 2569 roster data contains student PII; keep it out of Git.
+data/roster-2569.json

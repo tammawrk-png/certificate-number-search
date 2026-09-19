@@ -1,15 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [legacyHtml, activityHtml, activityJs, staffHtml, staffJs, config, activityCss, staffCss] = await Promise.all([
+const [legacyHtml, activityHtml, activityJs, adminHtml, adminJs, config, activityCss] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.js', import.meta.url), 'utf8'),
-  readFile(new URL('../staff.html', import.meta.url), 'utf8'),
-  readFile(new URL('../staff.js', import.meta.url), 'utf8'),
+  readFile(new URL('../admin-pickup.html', import.meta.url), 'utf8'),
+  readFile(new URL('../admin-pickup.js', import.meta.url), 'utf8'),
   readFile(new URL('../config.js', import.meta.url), 'utf8'),
   readFile(new URL('../activity.css', import.meta.url), 'utf8'),
-  readFile(new URL('../staff.css', import.meta.url), 'utf8'),
 ]);
 const configBuilder = await readFile(new URL('../scripts/prepare-public-config.mjs', import.meta.url), 'utf8');
 const deployWorkflow = await readFile(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
@@ -22,59 +21,23 @@ const migration24 = await readFile(new URL('../supabase/migrations/0024_registra
 
 assert.match(legacyHtml, /firebase-database-compat\.js/);
 assert.match(legacyHtml, /app\.js/);
-assert.match(activityHtml, /id="registration-form"/);
-assert.match(activityHtml, /id="lookup-form"/);
-assert.match(activityHtml, /id="registration-state"/);
-assert.match(activityHtml, /data-brand="dharma"/);
-assert.match(activityHtml, /data-brand="school"/);
-assert.match(activityJs, /public_dashboard_metrics_v2/);
-assert.match(activityJs, /submit_public_registration_v2/);
-assert.match(activityJs, /lookup_public_exam_status/);
-assert.match(activityJs, /public_registration_window_status/);
-assert.match(activityJs, /public_student_lookup_options/);
-assert.match(activityJs, /public_student_identity/);
-assert.match(activityJs, /public_update_student_self/);
-assert.match(activityJs, /public_student_registration_status/);
-assert.match(activityJs, /keepLevelLocked/);
-assert.match(activityJs, /levelSelect\.disabled = keepLevelLocked/);
-assert.match(activityJs, /guidance_status === 'suggested' && row\.recommended_level/);
-assert.match(activityJs, /public_student_certificate_alerts/);
-assert.doesNotMatch(activityHtml, /แก้ทะเบียนให้ทันที/);
-assert.match(activityHtml, /บันทึกข้อมูลของฉัน/);
-assert.match(activityHtml, /ประวัติใบประกาศเดิม/);
-assert.match(activityCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-assert.match(activityCss, /min-height: 52px; height: 52px/);
-assert.match(staffCss, /min-height:?\s*46px/);
-assert.match(staffHtml, /id="login-form"/);
-assert.match(staffHtml, /id="workspace"/);
-assert.match(staffHtml, /data-brand="dharma"/);
-assert.match(staffHtml, /data-brand="school"/);
-assert.match(staffHtml, /id="google-login"/);
-assert.match(staffJs, /school_report_rows/);
-assert.match(staffJs, /mother_sangha_form_rows/);
-assert.match(staffJs, /mother_sangha_form_rows_v3/);
-assert.match(staffJs, /certificate_match_review_rows/);
-assert.match(staffJs, /review_certificate_match/);
-assert.match(staffJs, /student_correction_review_rows/);
-assert.match(staffJs, /review_student_correction/);
-assert.match(staffJs, /certificate_pickup_report_rows/);
-assert.match(staffJs, /certificate_pickup_report_rows_v2/);
-assert.match(staffJs, /update_certificate_pickup_status/);
-assert.match(staffJs, /reportColumns/);
-assert.match(staffJs, /เลขประจำตัวนักเรียน/);
-assert.match(staffJs, /downloadCsv\([^;]+button\.dataset\.report/);
-assert.match(staffJs, /printReport/);
-assert.match(staffHtml, /ดาวน์โหลด CSV \(Excel\)/);
-assert.match(staffHtml, /พิมพ์รายงาน/);
-assert.match(staffHtml, /id="staff-pin-form"/);
-assert.match(staffJs, /staffAccessPin = '1234'/);
-assert.match(staffJs, /rpc\('is_staff'/);
-assert.match(staffJs, /dharma_staff_gate/);
-assert.match(staffJs, /if \(sessionStorage\.getItem\('dharma_staff_gate'\) !== '1'\)/);
-assert.doesNotMatch(staffHtml, /ดาวน์โหลด JSON/);
-assert.match(staffJs, /sessionStorage/);
-assert.match(staffJs, /provider=google/);
-assert.doesNotMatch(staffJs, /allowedDomain|@wrk\.ac\.th/);
+assert.match(activityHtml, /id="student-table"/);
+assert.match(activityHtml, /id="filled-count"/);
+assert.match(activityHtml, /template-links/);
+assert.doesNotMatch(activityHtml, /class="level-button"/);
+assert.match(activityHtml, /id="room-select"/);
+assert.match(activityHtml, /id="student-body"/);
+assert.match(activityHtml, /id="print-button"/);
+assert.match(activityHtml, /font-upload/);
+assert.doesNotMatch(activityHtml, /admin-pickup\.html/);
+assert.doesNotMatch(activityHtml, /staff\.html/);
+assert.match(activityJs, /localStorage/);
+assert.match(activityJs, /10001/);
+assert.match(activityCss, /@media\(max-width:760px\)/);
+assert.match(adminHtml, /id="pin-form"/);
+assert.match(adminHtml, /id="pickup-body"/);
+assert.match(adminJs, /'1234'/);
+assert.match(adminJs, /certificate-pickup-2569\.csv/);
 assert.doesNotMatch(migration11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
 assert.match(migration12, /create table if not exists public\.staff_roles/);
 assert.match(migration12, /public\.is_staff\(\)/);

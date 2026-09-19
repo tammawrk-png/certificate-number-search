@@ -1,110 +1,25 @@
 <!doctype html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f766e" />
-    <meta name="description" content="ระบบกิจกรรมธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา" />
-    <title>ระบบกิจกรรมธรรมศึกษา</title>
-    <link rel="stylesheet" href="activity.css?v=20260913-16" />
-  </head>
-  <body>
-    <main class="activity-shell">
-      <header class="activity-header">
-        <div class="header-topline"><a class="back-link" href="index.html">ค้นเลขใบประกาศ</a><div class="logo-pair" aria-label="ตราธรรมศึกษาและโรงเรียน"><img class="dharma-logo" data-brand="dharma" alt="ตราธรรมศึกษา" /><img class="school-logo" data-brand="school" alt="ตราโรงเรียนวัดไร่ขิงวิทยา" /></div><span class="live-badge"><i></i> ระบบกลางสนามสอบ</span></div>
-        <div class="header-content">
-          <div class="hero-copy">
-            <p class="eyebrow">งานธรรมศึกษา · โรงเรียนวัดไร่ขิงวิทยา</p>
-            <h1>ตรวจประวัติให้ชัดเจน<br /><em>แล้วค่อยสมัครสอบ</em></h1>
-            <p class="header-lead">กรอกเลขประจำตัวเพื่อดูประวัติใบประกาศ ตรวจข้อมูลส่วนตัว และเลือกสมัครเฉพาะระดับที่ต้องการ</p>
-            <div class="header-actions"><a class="header-action primary-action" href="#register">ตรวจประวัติของฉัน</a><a class="header-action ghost-action" href="#lookup">ตรวจสอบประกาศ</a></div>
-          </div>
-          <aside class="process-card" aria-label="วิธีใช้งาน">
-            <span class="process-label">ใช้งานอย่างไร</span>
-            <div class="process-line"><b>01</b><span>ค้นด้วยเลขประจำตัว</span></div>
-            <div class="process-line"><b>02</b><span>ดูใบประกาศและคำแนะนำ</span></div>
-            <div class="process-line"><b>03</b><span>ตรวจข้อมูล แล้วเลือกสมัคร</span></div>
-            <small>ไม่ต้องสร้างบัญชี และไม่ต้องกรอกห้องเรียนเอง</small>
-          </aside>
-        </div>
-      </header>
-
-      <nav class="tabs" aria-label="เมนูระบบ">
-        <a class="tab active" href="#dashboard">ภาพรวม</a>
-        <a class="tab" href="#register">รับสมัครสอบ</a>
-        <a class="tab" href="#lookup">ตรวจสอบรายชื่อ</a>
-        <a class="tab" href="#reports">รายงาน</a>
-      </nav>
-
-      <section id="dashboard" class="panel">
-        <div class="panel-heading"><div><span class="kicker">ข้อมูลสาธารณะ</span><h2>ภาพรวมสนามสอบ</h2><p class="panel-lead">ตัวเลขรวมสำหรับติดตามความคืบหน้า โดยไม่เปิดเผยข้อมูลส่วนบุคคล</p></div><span id="metrics-state" class="state pending">รอข้อมูลระบบ</span></div>
-        <div class="metric-grid">
-          <article class="metric"><span>นักเรียนปัจจุบัน</span><strong id="metric-students">—</strong><small>รายชื่อที่นำเข้าแล้ว</small></article>
-          <article class="metric"><span>จับคู่ประวัติแล้ว</span><strong id="metric-matched">—</strong><small>ต้องตรวจสอบก่อนยืนยัน</small></article>
-          <article class="metric"><span>สมัครสอบแล้ว</span><strong id="metric-registered">—</strong><small>แยกตามสายและระดับ</small></article>
-          <article class="metric"><span>สอบผ่าน</span><strong id="metric-passed">—</strong><small>แสดงเมื่อมีผลทางการ</small></article>
-        </div>
-        <div class="notice"><strong>สถานะข้อมูลทางการ</strong><p>ห้องสอบ เลขที่สอบ และผลสอบจะแสดงภายหลังมีประกาศจากแม่กองธรรมและเจ้าหน้าที่นำเข้าข้อมูลแล้วเท่านั้น</p></div>
-        <div class="exam-site"><strong>สนามสอบ</strong><span>โรงเรียนวัดไร่ขิงวิทยา · รหัสสนามสอบ 256101</span><small>ตำบลไร่ขิง อำเภอสามพราน จังหวัดนครปฐม · สังกัดวัดไร่ขิงพระอารามหลวง · คณะจังหวัดนครปฐม</small></div>
-      </section>
-
-      <section id="register" class="panel">
-        <div class="panel-heading registration-heading"><div><span class="kicker">ตรวจประวัติและสมัครสอบ</span><h2>ตรวจข้อมูลก่อนเลือกสมัคร</h2><p class="panel-lead">เริ่มจากเลขประจำตัวเพื่อดูประวัติใบประกาศและระดับที่ควรสมัครก่อน จากนั้นตรวจและบันทึกข้อมูลของตัวเองได้ทันที</p></div><span id="registration-state" class="state pending">กำลังตรวจสอบช่วงรับสมัคร</span></div>
-        <div class="registration-benefits" aria-label="จุดเด่นการสมัคร">
-          <span><b>01</b> กรอกสั้น</span><span><b>02</b> ตรวจข้อมูลก่อนส่ง</span><span><b>03</b> ไม่ต้องจำรหัสผ่าน</span>
-        </div>
-        <div class="optional-note"><strong>ไม่สอบต่อไม่ต้องสมัคร</strong><span>นักเรียนที่ยังไม่ประสงค์สอบต่อ ไม่ต้องเข้ามายืนยันหรือกรอกแบบฟอร์ม ระบบจะติดตามเฉพาะผู้สมัคร ส่วน ม.1 และ ม.4 ที่เป็นชั้นเริ่มต้นต้องสมัครชั้นตรีตามเกณฑ์โรงเรียน</span></div>
-        <div class="stepper" aria-label="ลำดับการสมัคร">
-          <div class="step active" data-step-indicator="1"><b>1</b><span>ค้นประวัติ</span></div><i></i><div class="step" data-step-indicator="2"><b>2</b><span>ตรวจข้อมูล</span></div><i></i><div class="step" data-step-indicator="3"><b>3</b><span>เลือกสมัคร</span></div>
-        </div>
-        <form id="registration-form" class="registration-wizard">
-          <input type="hidden" name="band" value="" />
-          <section class="wizard-step active" data-step="1">
-            <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span><div><span class="kicker">ขั้นที่ 1 จาก 3</span><h3>ค้นประวัติของคุณ</h3></div></div>
-            <div class="form-grid">
-              <label>ปีการศึกษา<select name="year" required><option value="2569">2569</option></select></label>
-              <label>เลขประจำตัวนักเรียน<input name="studentNumber" inputmode="numeric" autocomplete="off" required placeholder="กรอกเลขประจำตัวของคุณ" /><small class="field-help">ใช้สำหรับดูประวัติและยืนยันข้อมูลของคุณเท่านั้น ไม่ต้องกรอกชื่อ ชั้น หรือห้อง</small></label>
-              <label class="level-choice">ระดับที่จะสมัคร<select name="level" required><option value="ตรี">ชั้นตรี</option><option value="โท">ชั้นโท</option><option value="เอก">ชั้นเอก</option></select><small id="level-choice-help">ระบบจะแนะนำระดับหลังตรวจประวัติ คุณเปลี่ยนได้ตามความประสงค์และเกณฑ์ที่ระบบแจ้ง</small></label>
-            </div>
-            <button class="primary wizard-next" type="button">ถัดไป</button>
-          </section>
-          <section class="wizard-step" data-step="2" hidden>
-            <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 19c.7-3 2.7-4.5 6-4.5s5.3 1.5 6 4.5"/></svg></span><div><span class="kicker">ขั้นที่ 2 จาก 3</span><h3>ยืนยันว่าเป็นใคร</h3></div></div>
-            <div id="identity-preview" class="identity-preview" aria-live="polite" hidden></div>
-            <div id="certificate-alert" class="certificate-alert" aria-live="polite" hidden><strong>ประวัติใบประกาศเดิม</strong></div>
-            <div id="self-edit-panel" class="self-edit-panel" hidden>
-              <div><strong>ตรวจและแก้ไขข้อมูลของคุณ</strong><p>ข้อมูลจากทะเบียนจะแสดงให้ตรวจสอบ เลขประจำตัว ชั้น ห้อง และครูที่ปรึกษาเป็นข้อมูลระบบ แก้ไขจากหน้านี้ไม่ได้</p></div>
-              <div class="form-grid correction-grid"><label>คำนำหน้า<select name="selfTitle"><option value="เด็กชาย">เด็กชาย</option><option value="เด็กหญิง">เด็กหญิง</option><option value="นาย">นาย</option><option value="นางสาว">นางสาว</option><option value="นาง">นาง</option></select></label><label>ชื่อ<input name="selfFirstName" autocomplete="given-name" required /></label><label>นามสกุล<input name="selfLastName" autocomplete="family-name" required /></label><label>เลขประจำตัวประชาชน<input name="selfCitizenId" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="13 หลัก (ถ้ามี)" /></label><label>วันเดือนปีเกิด (พ.ศ.)<input name="selfBirthDate" inputmode="numeric" placeholder="วว/ดด/ปปปป" /></label></div>
-              <button id="save-self-data" class="secondary" type="button">บันทึกข้อมูลของฉัน</button>
-            </div>
-            <div class="wizard-actions"><button class="secondary wizard-back" type="button">ย้อนกลับ</button><button class="primary wizard-next" type="button">ตรวจข้อมูล</button></div>
-          </section>
-          <section class="wizard-step" data-step="3" hidden>
-            <div class="step-title"><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><div><span class="kicker">ขั้นที่ 3 จาก 3</span><h3>เลือกสมัครและตรวจสอบก่อนส่ง</h3></div></div>
-            <div class="summary-card" id="registration-summary"></div>
-            <div id="registration-mode-note" class="registration-mode-note" hidden></div>
-            <label class="check-field"><input name="identityConfirmed" type="checkbox" required /> ยืนยันว่าข้อมูลทะเบียนที่แสดงเป็นของฉัน</label>
-            <label class="check-field"><input name="consent" type="checkbox" required /> ยินยอมให้ใช้ข้อมูลเพื่อการสมัครสอบธรรมศึกษา</label>
-            <div class="wizard-actions"><button class="secondary wizard-back" type="button">แก้ไขข้อมูล</button><button class="primary" type="submit">ส่งใบสมัคร</button></div>
-          </section>
-        </form>
-        <p id="registration-message" class="form-message" role="status" aria-live="polite"></p>
-      </section>
-
-      <section id="lookup" class="panel">
-        <div class="panel-heading"><div><span class="kicker">Public lookup</span><h2>ตรวจสอบรายชื่อผู้มีสิทธิ์สอบ</h2></div><span class="state pending">รอประกาศทางการ</span></div>
-        <form id="lookup-form" class="lookup-form"><label class="sr-only" for="lookup-input">ค้นหาเลขประจำตัวหรือชื่อ</label><input id="lookup-input" placeholder="เลขประจำตัว หรือชื่อ-นามสกุล" /><button class="primary" type="submit">ตรวจสอบ</button></form>
-        <div id="lookup-result" class="lookup-result">ยังไม่มีข้อมูลประกาศผู้มีสิทธิ์สอบ ห้องสอบ เลขที่สอบ หรือผลสอบในระบบ</div>
-      </section>
-
-      <section id="reports" class="panel">
-        <div class="panel-heading"><div><span class="kicker">Reports</span><h2>รายงาน</h2></div><span class="state pending">รอข้อมูลสมัครสอบ</span></div>
-        <div class="report-grid"><article><h3>แบบแม่กองธรรม</h3><p>แยกไฟล์ชั้นตรี โท เอก และคงโครงสร้างต้นฉบับเดิม</p><button class="secondary" disabled>ยังไม่มีข้อมูลสำหรับส่งออก</button></article><article><h3>แบบโรงเรียน</h3><p>ชั้น ห้อง เลขที่ ครูที่ปรึกษา สถานะสมัคร และติดตามรายคน</p><button class="secondary" disabled>ยังไม่มีข้อมูลสำหรับส่งออก</button></article></div>
-      </section>
-      <footer><span>งานธรรมศึกษา โรงเรียนวัดไร่ขิงวิทยา</span><a class="staff-link" href="staff.html">พื้นที่เจ้าหน้าที่</a></footer>
-    </main>
-    <script src="assets.js?v=20260814-logos2"></script><script src="config.js?v=20260913-activity-2"></script>
-    <script>window.APP_CONFIG=window.APP_CONFIG||{supabase:{url:'https://jmlcsrmrtghmnpdpfdcf.supabase.co',publishableKey:'sb_publishable_ZyZtx2b_wS6XA-PmN5L5cQ_J6WiYrJG'}};</script>
-    <script src="activity.js?v=20260913-16"></script>
-  </body>
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>แบบสมัครธรรมศึกษา · ปี 2569</title><link rel="stylesheet" href="activity.css?v=20260919-13"/>
+</head>
+<body>
+  <main class="form-app">
+    <header class="control-bar"><div class="brand"><span class="line-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></span><strong>ตรวจข้อมูลสมัครธรรมศึกษา ปี 2569</strong></div><button type="button" id="print-button" class="action-button print-button"><span class="line-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 9V4h10v5M6 18H4v-7h16v7h-2M7 15h10v5H7z"/></svg></span>พิมพ์รายห้อง</button><button type="button" id="print-all-button" class="action-button print-all-button"><span class="line-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v4H6zM4 10h16v10H4zM8 14h8M8 17h5"/></svg></span>พิมพ์ทั้งหมด</button><nav class="template-links" aria-label="แบบฟอร์มต้นฉบับ"><span>ต้นฉบับ:</span><a class="template-link tri" href="https://drive.google.com/file/d/1NE1FkEdxPyjerMHCgt_CLCr-QL2V9hZM/view" target="_blank" rel="noopener">ศ.5 ตรี</a><a class="template-link tho" href="https://drive.google.com/file/d/1Uj-4pvuQnc_qmNoh9Q1edZiRQUMsHGvW/view" target="_blank" rel="noopener">ศ.6 โท</a><a class="template-link ek" href="https://drive.google.com/file/d/1_TEGPmuR6JyQzD1SqiVmfg8nSpsrW0D1/view" target="_blank" rel="noopener">ศ.6 เอก</a></nav><label class="font-button"><span class="line-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20h14M7 16l5-12 5 12M9 12h6"/></svg></span>ฟอนต์<input id="font-upload" type="file" accept=".ttf,.woff,.woff2" hidden/><span>เฉพาะตอนพิมพ์</span></label><span id="save-status" class="save-status">พร้อมใช้งาน</span></header>
+    <section class="room-bar"><label>ชั้น<select id="grade-select"></select></label><label>ห้อง<select id="room-select"></select></label><span id="filled-count" class="filled-count">กรอกแล้ว 0/0 คน</span><span class="sync-note">ข้อมูลบันทึกอัตโนมัติ</span><a href="index.html" class="back-link">ค้นใบประกาศ</a></section>
+    <section class="paper" id="print-area">
+      <div class="paper-header"><div><h1 id="form-title">แบบตรวจข้อมูลสมัครธรรมศึกษา</h1><p>โรงเรียนวัดไร่ขิงวิทยา สังกัดสำนักงานเขตพื้นที่การศึกษามัธยมศึกษานครปฐม</p></div><div class="paper-meta"><label>ปีการศึกษา<input value="2569" readonly/></label></div></div>
+      <div class="source-fields"><label>ชื่อองค์กร<input value="โรงเรียนวัดไร่ขิงวิทยา" readonly/></label><label>สนามสอบ<input value="โรงเรียนวัดไร่ขิงวิทยา" readonly/></label><label>รหัสสนามสอบ<input value="256101" readonly/></label><label>สังกัดวัด<input value="วัดไร่ขิงพระอารามหลวง" readonly/></label><label>สำนักเรียน<input value="คณะจังหวัดนครปฐม" readonly/></label><label>ชั้น / ห้อง<input id="room-label" readonly/></label><label>ครูที่ปรึกษา 1<input id="advisor-one" readonly/></label><label>ครูที่ปรึกษา 2<input id="advisor-two" readonly/></label></div>
+      <div class="table-caption"><strong>รายชื่อนักเรียนในห้อง</strong><span>แนะนำระดับตามชั้นเรียน · <button id="roster-editor-button" class="detail-toggle" type="button">เพิ่ม / แก้ไขรายชื่อ</button><button id="toggle-detail-columns" class="detail-toggle" type="button">แสดงข้อมูลประกอบ</button></span></div>
+      <div id="status-summary" class="status-summary" aria-live="polite"></div>
+      <div class="table-scroll"><table id="student-table"><thead><tr><th>ที่</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>เลขประชาชน</th><th>วันเดือนปีเกิด (พ.ศ.)</th><th>ระดับการศึกษา</th><th>ระดับที่จะสมัคร</th><th>เลขใบประกาศเดิม</th><th>สอบหรือไม่สอบ</th><th class="detail-column">องค์กร / สถานศึกษา</th><th class="detail-column">ที่ตั้งองค์กร</th><th class="detail-column">สังกัดวัด</th><th class="detail-column">สำนักเรียน</th><th class="detail-column">หมายเหตุ</th><th>สถานะ</th></tr></thead><tbody id="student-body"></tbody></table></div>
+      <div class="paper-footer"><span id="footer-summary">กรอกข้อมูลให้ครบก่อนพิมพ์หรือส่งออก</span><span>ผู้กรอกสามารถเปิดจากโทรศัพท์ได้</span></div>
+    </section>
+    <section id="all-print-sheet" class="all-print-sheet" aria-hidden="true"></section>
+    <section id="print-preview-modal" class="print-preview-modal" hidden aria-labelledby="print-preview-title"><div class="print-preview-backdrop" data-close-print-preview></div><div class="print-preview-card"><button type="button" class="roster-modal-close" data-close-print-preview aria-label="ปิด">×</button><span class="modal-kicker">เตรียมพิมพ์</span><h2 id="print-preview-title">พิมพ์รายห้อง</h2><p id="print-preview-note">ตรวจสอบรายการก่อนเปิดหน้าพิมพ์</p><div class="print-preview-actions"><button type="button" class="modal-secondary" data-close-print-preview>ยกเลิก</button><button type="button" id="confirm-print-button" class="modal-primary">เปิดหน้าพิมพ์</button></div></div></section>
+    <section id="roster-modal" class="roster-modal" hidden aria-labelledby="roster-modal-title"><div class="roster-modal-backdrop" data-close-roster-modal></div><div class="roster-modal-card"><button type="button" class="roster-modal-close" data-close-roster-modal aria-label="ปิด">×</button><h2 id="roster-modal-title">แก้ไขข้อมูลนักเรียน</h2><p class="modal-note">ใช้สำหรับแก้ชื่อ ย้ายชั้น/ห้อง หรือเพิ่มรายชื่อในต้นแบบนี้ ข้อมูลจะบันทึกไว้ในเครื่อง</p><form id="roster-form"><input id="edit-original-number" type="hidden"/><label>เลขประจำตัว<input id="edit-number" required inputmode="numeric"/></label><label>ชื่อ - สกุล<input id="edit-name" required/></label><div class="modal-grid"><label>ชั้น<select id="edit-grade"></select></label><label>ห้อง<select id="edit-room"></select></label></div><div class="modal-grid"><label>เลขประชาชน<input id="edit-citizen" inputmode="numeric" maxlength="13"/></label><label>วัน/เดือน/ปีเกิด<input id="edit-birth" type="date"/></label></div><div class="modal-grid"><label>ครูที่ปรึกษา 1<input id="edit-advisor-one"/></label><label>ครูที่ปรึกษา 2<input id="edit-advisor-two"/></label></div><div class="modal-actions"><button type="button" class="modal-secondary" data-close-roster-modal>ยกเลิก</button><button type="submit" class="modal-primary">บันทึกข้อมูล</button></div><p id="roster-form-message" class="modal-message" aria-live="polite"></p></form></div></section>
+  </main>
+  <script src="config.js?v=20260919-13"></script><script src="activity.js?v=20260919-13"></script>
+</body>
 </html>

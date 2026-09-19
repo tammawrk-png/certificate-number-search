@@ -1,370 +1,245 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
-  document.querySelector('[data-brand="dharma"]')?.setAttribute('src', window.SCHOOL_ASSETS?.dharmaLogo || '');
-  document.querySelector('[data-brand="school"]')?.setAttribute('src', window.SCHOOL_ASSETS?.schoolLogo || '');
-  const configuredSupabase = window.APP_CONFIG?.supabase || {};
-  const config = {
-    url: configuredSupabase.url || 'https://jmlcsrmrtghmnpdpfdcf.supabase.co',
-    publishableKey: configuredSupabase.publishableKey || 'sb_publishable_ZyZtx2b_wS6XA-PmN5L5cQ_J6WiYrJG',
+  const levelCode = { ตรี:'tri', โท:'tho', เอก:'ek' };
+  const grades = ['1','2','3','4','5','6','higher'];
+  const rooms = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','higher'];
+  const demoStudents = {
+    '1:1': [
+      { number:'10001', name:'เด็กชาย สมชาย ใจดี', birth_iso:'2013-03-15', education:'มัธยม', previous:'', citizen:'', application_level:'ตรี', advisor_1:'ครูตัวอย่าง หนึ่ง', advisor_2:'ครูตัวอย่าง สอง' },
+      { number:'10002', name:'เด็กหญิง มาลี รักเรียน', birth_iso:'2012-08-20', education:'มัธยม', previous:'TR-2568-001', citizen:'', application_level:'ตรี', advisor_1:'ครูตัวอย่าง หนึ่ง', advisor_2:'ครูตัวอย่าง สอง' },
+    ],
+    '4:2': [{ number:'40001', name:'นาย วิทยา ตั้งใจ', birth_iso:'2009-01-02', education:'มัธยม', previous:'TR-2567-009', citizen:'', application_level:'โท', advisor_1:'ครูตัวอย่าง สาม', advisor_2:'ครูตัวอย่าง สี่' }],
   };
-  const apiBase = config?.url?.replace(/\/$/, '');
-  const apiHeaders = config?.publishableKey
-    ? { apikey: config.publishableKey, Authorization: `Bearer ${config.publishableKey}`, 'Content-Type': 'application/json' }
-    : null;
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[char]));
-  const metricMap = {
-    current_students: '#metric-students',
-    matched_students: '#metric-matched',
-    submitted_registrations: '#metric-registered',
-    imported_results: '#metric-passed',
+  const state = { grade:'1', room:'1', level:'ตรี', rows:[] };
+  let pendingPrint = '';
+  const storageKey = () => `dharma-direct-form-v3:${state.grade}:${state.room}`;
+  const rosterOverrideKey = 'dharma-roster-overrides-2569-v1';
+  let rosterRows = [];
+  const demoMode = !(window.APP_CONFIG?.supabase?.publishableKey);
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
+  const thaiDigits = (value) => String(value ?? '').replace(/[๐-๙]/g, (c) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
+  const normalizeDigits = (value) => thaiDigits(value).replace(/\D/g, '');
+  const validThaiId = (value) => {
+    const digits = normalizeDigits(value);
+    if (!/^\d{13}$/.test(digits) || /^(\d)\1{12}$/.test(digits)) return false;
+    let sum = 0;
+    for (let index = 0; index < 12; index += 1) sum += Number(digits[index]) * (13 - index);
+    return ((11 - (sum % 11)) % 10) === Number(digits[12]);
   };
-  let activeAcademicYear = '2569';
-  let registrationOpen = false;
-  let verifiedStudent = null;
-  let existingRegistrations = [];
-  let lockedLevel = null;
-  const syncAcademicYear = (year) => {
-    if (!year) return;
-    activeAcademicYear = String(year);
-    const yearSelect = registrationForm?.elements?.year;
-    if (yearSelect) {
-      yearSelect.innerHTML = `<option value="${escapeHtml(activeAcademicYear)}">${escapeHtml(activeAcademicYear)}</option>`;
-      yearSelect.value = activeAcademicYear;
-    }
+  const citizenState = (value) => {
+    const digits = normalizeDigits(value);
+    if (!digits) return '';
+    if (digits.length < 13) return 'incomplete';
+    return validThaiId(digits) ? 'valid' : 'invalid';
   };
-  const setMetric = (name, value) => {
-    const node = $(metricMap[name]);
-    if (node) node.textContent = value == null ? '—' : Number(value).toLocaleString('th-TH');
+  const formatThaiDate = (iso) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return '';
+    const [year, month, day] = iso.split('-');
+    return `${day}/${month}/${Number(year) + 543}`;
   };
-  const loadPublicMetrics = async () => {
-    const state = $('#metrics-state');
-    if (!apiBase || !apiHeaders) {
-      state.textContent = 'รอเชื่อมต่อ API สาธารณะ';
-      return;
-    }
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_dashboard_metrics_v2`, {
-        method: 'POST',
-        headers: apiHeaders,
-        body: '{}',
+  const gradeLabel = (value) => value === 'higher' ? 'อุดมศึกษา' : `ม.${value}`;
+  const roomLabel = (value) => value === 'higher' ? 'ห้องอุดม' : `ห้อง ${value}`;
+  const gradeRecommendation = () => ({ '1':'ตรี', '4':'ตรี' }[state.grade] || '');
+  const nextLevel = { ตรี:'โท', โท:'เอก' };
+  const recommendationFor = (row) => {
+    const byGrade = gradeRecommendation();
+    if (byGrade) return { level:byGrade, basis:'ตามชั้นเริ่มต้น' };
+    if (row.match_status === 'auto_matched' && nextLevel[row.legacy_level]) return { level:nextLevel[row.legacy_level], basis:`ต่อจากเดิมชั้น${row.legacy_level}` };
+    return { level:'', basis:'ต้องตรวจสอบใบประกาศเดิมก่อน' };
+  };
+  const suggestedLevel = () => recommendationFor({}).level;
+  const canSkipExam = (row) => Boolean(row.special_needs || String(row.previous || '').trim());
+  const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
+  const rosterEdits = () => { try { return JSON.parse(localStorage.getItem(rosterOverrideKey) || '{"overrides":{},"extras":[]}'); } catch { return { overrides:{}, extras:[] }; } };
+  const studentsForRoom = () => {
+    if (!rosterRows.length) return demoStudents[`${state.grade}:${state.room}`] || [];
+    const edits = rosterEdits();
+    const base = rosterRows.map((student) => ({ ...student, ...(edits.overrides?.[student.number] || {}) })).filter((student) => String(student.grade) === state.grade && String(student.room) === state.room);
+    return base.concat((edits.extras || []).filter((student) => String(student.grade) === state.grade && String(student.room) === state.room));
+  };
+  const loadRows = () => {
+    const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}');
+    state.rows = studentsForRoom().map((student) => ({
+      organization_name:'โรงเรียนวัดไร่ขิงวิทยา', organization_location:'ไร่ขิง / สามพราน / นครปฐม', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student, ...saved[student.number],
+    })).map((row) => { if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = ''; return row; });
+  };
+  const rowComplete = (row) => Boolean(validThaiId(row.citizen) && row.birth_iso && row.application_level && (row.exam_status === 'exam' || (row.exam_status === 'not_exam' && canSkipExam(row))));
+  const fieldClass = (row) => citizenState(row.citizen);
+  const checkIcon = (row) => citizenState(row.citizen) === 'incomplete'
+    ? '<span class="field-hint invalid-hint">กรอกไม่ครบ 13 หลัก</span>'
+    : citizenState(row.citizen) === 'invalid'
+      ? '<span class="field-hint invalid-hint">เลขไม่ผ่านการตรวจสอบ</span>'
+      : '';
+  const option = (value, label, current, recommendation = '') => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}${recommendation === value ? ' · แนะนำ' : ''}</option>`;
+  const render = () => {
+    const students = state.rows;
+    $('#room-label').value = `${gradeLabel(state.grade)} / ${roomLabel(state.room)}`;
+    $('#advisor-one').value = students[0]?.advisor_1 || '—';
+    $('#advisor-two').value = students[0]?.advisor_2 || '—';
+    $('#form-title').textContent = 'แบบตรวจข้อมูลสมัครธรรมศึกษา';
+    $('#student-body').innerHTML = students.length ? students.map((row, index) => {
+      const complete = rowComplete(row); const partial = Boolean(normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes); const code = levelCode[row.application_level] || 'tri'; const recommendation = recommendationFor(row);
+      const rowKind = row.special_needs ? 'special' : row.exam_status === 'not_exam' ? 'not-exam' : row.exam_status === 'exam' ? 'exam-selected' : '';
+      const noExamDisabled = !canSkipExam(row);
+      return `<tr class="student-row ${complete ? 'complete' : partial ? 'partial' : 'empty'} ${rowKind}" data-number="${esc(row.number)}" data-application-level="${code}">
+        <td>${index + 1}</td><td>${esc(row.number)}</td><td><button type="button" class="student-name-button" data-edit-number="${esc(row.number)}" title="กดเพื่อแก้ไขหรือกรอกข้อมูลรายคน">${esc(row.name)}</button></td>
+        <td><div class="citizen-cell"><input class="citizen-input ${fieldClass(row)}" data-field="citizen" inputmode="numeric" maxlength="13" value="${esc(row.citizen || '')}" placeholder="เลข 13 หลัก" aria-label="เลขประชาชน ${esc(row.name)}" />${checkIcon(row)}</div></td>
+        <td><div class="birth-cell"><button type="button" class="date-display" data-open-date aria-label="เลือกวันเดือนปีเกิด ${esc(row.name)}"><span data-be-date>${esc(formatThaiDate(row.birth_iso)) || 'ว/ด/ป พ.ศ.'}</span></button><input class="date-picker-input" data-field="birth_iso" type="date" value="${esc(row.birth_iso || '')}" aria-label="วันเดือนปีเกิด ${esc(row.name)}" /></div></td>
+        <td>${esc(row.education)}</td>
+        <td><div class="level-cell"><select data-field="application_level">${option('ตรี','ตรี',row.application_level,recommendation.level)}${option('โท','โท',row.application_level,recommendation.level)}${option('เอก','เอก',row.application_level,recommendation.level)}</select><span class="recommend-hint">${recommendation.level ? `ควรสอบ: ${recommendation.level}` : recommendation.basis}</span></div></td>
+        <td><input data-field="previous" value="${esc(row.previous || '')}" placeholder="เลขเดิม" />${row.match_status === 'auto_matched' ? `<span class="match-hint">จับคู่แล้ว${row.legacy_level ? ` · เดิม${esc(row.legacy_level)}` : ''}</span>` : row.match_status === 'review' ? '<span class="match-hint review">ต้องตรวจ</span>' : ''}</td>
+        <td><div class="exam-choice"><label><input data-field="exam_status" data-exam-value="exam" type="checkbox" ${row.exam_status === 'exam' ? 'checked' : ''} /> สอบ</label><label class="no-exam-option"><input data-field="exam_status" data-exam-value="not_exam" type="checkbox" ${row.exam_status === 'not_exam' ? 'checked' : ''} ${noExamDisabled ? 'disabled' : ''} /> ไม่สอบ</label><label class="special-option"><input data-field="special_needs" type="checkbox" ${row.special_needs ? 'checked' : ''} /> นักเรียนพิเศษ ไม่ต้องสอบ</label></div></td>
+        <td class="detail-column"><input data-field="organization_name" value="${esc(row.organization_name)}" /></td><td class="detail-column"><input data-field="organization_location" value="${esc(row.organization_location)}" /></td><td class="detail-column"><input data-field="temple_affiliation" value="${esc(row.temple_affiliation)}" /></td><td class="detail-column"><input data-field="school_council" value="${esc(row.school_council)}" /></td><td class="detail-column"><input data-field="notes" value="${esc(row.notes || '')}" placeholder="หมายเหตุ" /></td>
+        <td><span class="status-chip ${complete ? 'complete' : partial ? 'partial' : 'empty'}">${row.special_needs ? 'พิเศษ' : complete ? 'กรอกแล้ว' : partial ? 'ข้อมูลไม่ครบ' : 'ยังไม่กรอก'}</span></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="15" class="empty-room">ชั้นและห้องนี้ยังไม่มีรายชื่อนักเรียน</td></tr>';
+    const complete = students.filter(rowComplete).length;
+    const partial = students.filter((row) => !rowComplete(row) && (normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes)).length;
+    const special = students.filter((row) => row.special_needs).length;
+    const exams = students.filter((row) => row.exam_status === 'exam').length;
+    const noExams = students.filter((row) => row.exam_status === 'not_exam').length;
+    $('#filled-count').textContent = `กรอกแล้ว ${complete}/${students.length} คน`;
+    $('#status-summary').innerHTML = `<span class="summary-complete">กรอกแล้ว ${complete}</span><span class="summary-empty">ยังไม่กรอก ${Math.max(students.length - partial - complete, 0)}</span><span class="summary-partial">ข้อมูลไม่ครบ ${partial}</span><span class="summary-special">พิเศษ ${special}</span><span class="summary-exam">สอบ ${exams}</span><span class="summary-no-exam">ไม่สอบ ${noExams}</span>`;
+    $('#footer-summary').textContent = complete === students.length && students.length ? 'ข้อมูลครบทุกคนแล้ว พร้อมตรวจและพิมพ์' : `ยังเหลือข้อมูลที่ต้องกรอก ${Math.max(students.length - complete, 0)} คน`;
+    document.querySelectorAll('#student-body tr[data-number]').forEach((tr) => {
+      tr.querySelectorAll('[data-field]').forEach((field) => {
+        field.addEventListener('input', () => {
+          if (field.dataset.field === 'citizen') { field.classList.remove('valid','invalid','incomplete'); const status = citizenState(field.value); if (status) field.classList.add(status); }
+          if (field.dataset.field === 'birth_iso') tr.querySelector('[data-be-date]').textContent = formatThaiDate(field.value) || 'ว/ด/ป พ.ศ.';
+          if (field.dataset.field === 'previous') syncExamCheckboxes(tr);
+        });
+        field.addEventListener('change', () => { if (field.dataset.field === 'exam_status' && field.checked) tr.querySelectorAll('[data-field="exam_status"]').forEach((other) => { if (other !== field) other.checked = false; }); updateRow(tr); });
       });
-      if (!response.ok) throw new Error(`metrics request failed: ${response.status}`);
-      const rows = await response.json();
-      const row = Array.isArray(rows) ? rows[0] : rows;
-      if (!row) throw new Error('metrics response was empty');
-      syncAcademicYear(row.academic_year);
-      setMetric('current_students', row.current_students);
-      setMetric('submitted_registrations', row.submitted_registrations);
-      setMetric('imported_results', row.imported_results);
-      setMetric('matched_students', row.matched_students);
-      state.textContent = `อัปเดตจากฐานข้อมูล · ปี ${row.academic_year}`;
-    } catch (error) {
-      console.warn(error);
-      state.textContent = 'เชื่อมต่อ API ไม่สำเร็จ';
-    }
+    });
+    document.querySelectorAll('[data-edit-number]').forEach((button) => button.addEventListener('click', () => openRosterModal(button.dataset.editNumber)));
+    document.querySelectorAll('[data-open-date]').forEach((button) => button.addEventListener('click', () => { const input = button.parentElement.querySelector('input[type="date"]'); if (input?.showPicker) input.showPicker(); else input?.click(); }));
   };
-  const loadRegistrationWindow = async () => {
-    const state = $('#registration-state');
-    if (!state || !apiBase || !apiHeaders) {
-      if (state) state.textContent = 'รอเชื่อมต่อ API สาธารณะ';
-      return;
-    }
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_registration_window_status`, {
-        method: 'POST', headers: apiHeaders, body: JSON.stringify({ requested_year: activeAcademicYear }),
-      });
-      if (!response.ok) throw new Error(`registration window request failed: ${response.status}`);
-      const rows = await response.json();
-      const row = Array.isArray(rows) ? rows[0] : rows;
-      if (!row) throw new Error('registration window response was empty');
-      state.classList.toggle('open', Boolean(row.is_open));
-      state.classList.toggle('pending', !row.is_open);
-      registrationOpen = Boolean(row.is_open);
-      state.textContent = row.is_open ? 'เปิดรับสมัครแล้ว' : 'ยังไม่เปิดรับสมัคร';
-    } catch (error) {
-      console.warn(error);
-      state.textContent = 'ตรวจสอบช่วงรับสมัครไม่ได้';
-    }
+  const syncExamCheckboxes = (tr) => {
+    const row = state.rows.find((item) => item.number === tr.dataset.number); if (!row) return;
+    const noExam = tr.querySelector('[data-exam-value="not_exam"]');
+    if (noExam) noExam.disabled = !(row.special_needs || String(tr.querySelector('[data-field="previous"]')?.value || '').trim());
   };
-  const registrationForm = $('#registration-form');
-  const wizardSteps = [...registrationForm.querySelectorAll('.wizard-step')];
-  const stepIndicators = [...document.querySelectorAll('[data-step-indicator]')];
-  let currentStep = 1;
-  const summaryLabels = { year: 'ปีการศึกษา', band: 'สายการศึกษา', level: 'ระดับธรรมศึกษา', studentNumber: 'เลขประจำตัวนักเรียน', fullName: 'ชื่อ-นามสกุล', grade: 'ชั้น/ห้อง', advisors: 'ครูที่ปรึกษา', application: 'สถานะใบสมัคร' };
-  const bandLabels = { lower_secondary: 'มัธยมศึกษาตอนต้น', upper_secondary: 'มัธยมศึกษาตอนปลาย', higher_education: 'อุดมศึกษา' };
-  const guidanceLabels = { required: 'ต้องสมัครชั้นตรีตามเกณฑ์ชั้นเริ่มต้น', suggested: 'แนะนำระดับถัดไปจากประวัติเดิม', completed: 'พบประวัติชั้นเอกแล้ว ไม่บังคับสมัครต่อ', unmatched: 'ยังไม่พบประวัติที่จับคู่ได้', review_required: 'พบประวัติชื่อซ้ำ รอเจ้าหน้าที่ตรวจสอบ' };
-  const selectedText = (name) => registrationForm.elements[name]?.selectedOptions?.[0]?.textContent || registrationForm.elements[name]?.value || '';
-  const updateSummary = () => {
-    const values = {
-      year: selectedText('year'), band: bandLabels[verifiedStudent?.education_band] || 'ระบบจะกำหนดจากทะเบียน', level: selectedText('level'),
-      studentNumber: verifiedStudent?.student_number || registrationForm.elements.studentNumber.value.trim(), fullName: verifiedStudent?.full_name || 'ยังไม่ได้ยืนยันตัวตน',
-      grade: verifiedStudent ? `ม.${verifiedStudent.grade_level} · ห้อง ${verifiedStudent.room_no}` : '—',
-      advisors: verifiedStudent ? [verifiedStudent.advisor_1, verifiedStudent.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล' : '—',
-      application: existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value) ? 'มีใบสมัครระดับนี้แล้ว — การส่งครั้งนี้จะอัปเดตใบสมัครเดิม' : 'ยังไม่มีใบสมัครระดับนี้ — การส่งครั้งนี้จะสร้างใบสมัครใหม่',
-    };
-    $('#registration-summary').innerHTML = Object.entries(values).map(([key, value]) =>
-      `<div class="summary-row"><span>${summaryLabels[key]}</span><strong>${escapeHtml(value || '—')}</strong></div>`
-    ).join('');
+  const updateRow = (tr) => {
+    const row = state.rows.find((item) => item.number === tr.dataset.number); if (!row) return;
+    tr.querySelectorAll('[data-field]').forEach((field) => {
+      if (field.dataset.field === 'exam_status' && field.type === 'checkbox') return;
+      row[field.dataset.field] = field.type === 'checkbox' ? field.checked : field.value;
+    });
+    const selectedExam = tr.querySelector('[data-field="exam_status"]:checked');
+    row.exam_status = selectedExam?.dataset.examValue || '';
+    if (row.special_needs) row.exam_status = 'not_exam';
+    if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = '';
+    const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved));
+    setStatus(row.citizen && validThaiId(row.citizen) ? 'บันทึกแล้ว · เลขบัตรถูกต้อง' : 'บันทึกแล้ว', validThaiId(row.citizen) ? '#167047' : '#765914'); render();
   };
-  const setWizardStep = (step) => {
-    currentStep = step;
-    wizardSteps.forEach((section) => { const active = Number(section.dataset.step) === step; section.hidden = !active; section.classList.toggle('active', active); });
-    stepIndicators.forEach((indicator) => indicator.classList.toggle('active', Number(indicator.dataset.stepIndicator) <= step));
-    if (step === 3) updateSummary();
+  const closeRosterModal = () => { $('#roster-modal').hidden = true; $('#roster-form-message').textContent = ''; };
+  const openRosterModal = (number = '') => {
+    const row = state.rows.find((item) => item.number === number) || { number:'', name:'', grade:state.grade, room:state.room, citizen:'', birth_iso:'', advisor_1:'', advisor_2:'' };
+    $('#edit-original-number').value = number;
+    $('#edit-number').value = row.number || '';
+    $('#edit-name').value = row.name || '';
+    $('#edit-grade').value = String(row.grade || state.grade);
+    $('#edit-room').value = String(row.room || state.room);
+    $('#edit-citizen').value = row.citizen || '';
+    $('#edit-birth').value = row.birth_iso || '';
+    $('#edit-advisor-one').value = row.advisor_1 || '';
+    $('#edit-advisor-two').value = row.advisor_2 || '';
+    $('#roster-modal-title').textContent = number ? 'แก้ไขข้อมูลนักเรียน' : 'เพิ่มรายชื่อนักเรียน';
+    $('#roster-modal').hidden = false;
+    $('#edit-name').focus();
   };
-  const tabs = [...document.querySelectorAll('.tab')];
-  const syncActiveTab = () => {
-    const target = window.location.hash || '#dashboard';
-    tabs.forEach((tab) => tab.classList.toggle('active', new URL(tab.href).hash === target));
-  };
-  tabs.forEach((tab) => tab.addEventListener('click', () => window.setTimeout(syncActiveTab, 0)));
-  window.addEventListener('hashchange', syncActiveTab);
-  syncActiveTab();
-  const verifyStudent = async () => {
-    const preview = $('#identity-preview');
-    const message = $('#registration-message');
-    preview.classList.remove('error');
-    if (!apiBase || !apiHeaders) {
-      preview.hidden = false;
-      preview.textContent = 'ยังไม่สามารถตรวจทะเบียนได้ เพราะยังไม่ได้เชื่อมต่อ API';
-      return false;
-    }
-    const studentNumber = registrationForm.elements.studentNumber.value.trim();
-    if (!studentNumber) return false;
-    preview.hidden = false;
-    preview.textContent = 'กำลังค้นเลขประจำตัวกับทะเบียนโรงเรียน…';
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_lookup_options`, {
-        method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }),
-      });
-      if (!response.ok) throw new Error(`student preflight failed: ${response.status}`);
-      const rows = await response.json();
-      const row = Array.isArray(rows) ? rows[0] : rows;
-      if (!row?.verified) {
-        preview.classList.add('error');
-        preview.textContent = 'ไม่พบเลขประจำตัวในทะเบียนปีนี้ กรุณาตรวจสอบตัวเลข หรือติดต่อโรงเรียน';
-        return false;
-      }
-      verifiedStudent = row;
-      registrationForm.elements.band.value = row.education_band;
-      if (row.required_level) registrationForm.elements.level.value = row.required_level;
-      else if (row.guidance_status === 'suggested' && row.recommended_level) registrationForm.elements.level.value = row.recommended_level;
-      const levelSelect = registrationForm.elements.level;
-      const levelHelp = $('#level-choice-help');
-      const requiredChoice = Boolean(row.required_level);
-      const completedChoice = row.guidance_status === 'completed';
-      lockedLevel = row.required_level || null;
-      levelSelect.disabled = requiredChoice || completedChoice;
-      levelHelp.textContent = requiredChoice
-        ? `เกณฑ์กำหนดให้ ม.${row.grade_level} สมัครชั้น${row.required_level} ระบบล็อกระดับนี้เพื่อป้องกันเลือกผิด`
-        : completedChoice
-          ? 'พบประวัติชั้นเอกแล้ว ไม่จำเป็นต้องสมัครต่อ หากต้องการสอบซ้ำให้ติดต่อเจ้าหน้าที่'
-          : 'ระบบเลือกคำแนะนำให้เป็นค่าเริ่มต้น แต่คุณเปลี่ยนระดับเองได้ตามความประสงค์และเกณฑ์';
-      const advisors = [row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล';
-      const recommendation = row.guidance_status === 'review_required'
-        ? 'รอเจ้าหน้าที่ตรวจประวัติชื่อซ้ำก่อนใช้เป็นคำแนะนำ'
-        : row.guidance_status === 'required'
-          ? `ต้องสมัครชั้น${row.required_level}`
-          : row.guidance_status === 'completed'
-            ? 'จบชั้นเอกแล้ว ไม่จำเป็นต้องสมัครต่อ'
-            : row.recommended_level ? `แนะนำสมัครชั้น${row.recommended_level}` : 'ยังไม่พบประวัติเดิมที่จับคู่ได้';
-      const recommendationClass = row.guidance_status === 'required' ? 'required' : row.guidance_status === 'completed' ? 'completed' : row.guidance_status === 'review_required' ? 'review' : 'suggested';
-      preview.classList.remove('error');
-      preview.innerHTML = `<strong>พบข้อมูลของคุณจากเลขประจำตัว — โปรดตรวจสอบ</strong><div class="preview-name">${escapeHtml(row.title || '')}${escapeHtml(row.full_name)}</div><div class="preview-grid">` +
-        `<span>สาย/ชั้น</span><b>${escapeHtml(bandLabels[row.education_band] || row.education_band)} · ม.${escapeHtml(row.grade_level)}</b>` +
-        `<span>ห้อง</span><b>ห้อง ${escapeHtml(row.room_no)}</b>` +
-        `<span>ครูที่ปรึกษา</span><b>${escapeHtml(advisors)}</b>` +
-        `<span>ประวัติเดิม</span><b>${escapeHtml(row.highest_legacy_level || 'ยังไม่พบ')} · ${escapeHtml(guidanceLabels[row.guidance_status] || '')}</b>` +
-        `</div><div class="recommendation-card ${recommendationClass}"><span>คำแนะนำการสมัคร</span><b>${escapeHtml(recommendation)}</b><small>${row.guidance_status === 'suggested' ? 'คุณเลือกเปลี่ยนระดับเองได้' : row.guidance_status === 'required' ? 'ระบบล็อกตามเกณฑ์ชั้นเริ่มต้น' : 'ตรวจสอบประวัติประกอบก่อนตัดสินใจ'}</small></div><small>ประวัติใบประกาศจะแสดงด้านล่าง หากไม่สอบต่อไม่ต้องยืนยันหรือสมัคร</small>`;
-      const identityResponse = await fetch(`${apiBase}/rest/v1/rpc/public_student_identity`, {
-        method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }),
-      });
-      const identityRows = identityResponse.ok ? await identityResponse.json() : [];
-      const identity = Array.isArray(identityRows) ? identityRows[0] : identityRows;
-      const editPanel = $('#self-edit-panel');
-      editPanel.hidden = false;
-      registrationForm.elements.selfTitle.value = identity?.title || row.title || (Number(row.grade_level) <= 3 ? 'เด็กชาย' : 'นาย');
-      registrationForm.elements.selfFirstName.value = identity?.first_name || row.first_name || '';
-      registrationForm.elements.selfLastName.value = identity?.last_name || row.last_name || '';
-      registrationForm.elements.selfCitizenId.value = identity?.citizen_id || '';
-      registrationForm.elements.selfBirthDate.value = identity?.birth_date_be || '';
-      await loadCertificateAlerts(studentNumber);
-      await loadRegistrationStatus(studentNumber);
-      return true;
-    } catch (error) {
-      console.warn(error);
-      message.textContent = 'ตรวจทะเบียนไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
-      preview.classList.add('error');
-      preview.textContent = 'ระบบตรวจทะเบียนขัดข้องชั่วคราว กรุณาลองใหม่';
-      return false;
-    }
-  };
-  const loadRegistrationStatus = async (studentNumber) => {
-    existingRegistrations = [];
-    const levelSelect = registrationForm.elements.level;
-    const levelHelp = $('#level-choice-help');
-    const keepLevelLocked = Boolean(lockedLevel) || verifiedStudent?.guidance_status === 'completed';
-    levelSelect.disabled = keepLevelLocked;
-    if (!keepLevelLocked) levelHelp.textContent = 'ระบบจะแนะนำระดับหลังตรวจประวัติ คุณเปลี่ยนได้ตามความประสงค์และเกณฑ์ที่ระบบแจ้ง';
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_registration_status`, { method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }) });
-      if (response.ok) existingRegistrations = await response.json();
-      const current = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
-      const note = $('#registration-mode-note');
-      if (note) { note.hidden = false; note.textContent = current ? 'มีใบสมัครระดับนี้อยู่แล้ว การกดส่งจะอัปเดตข้อมูลใบสมัครเดิม ไม่สร้างรายการซ้ำ' : 'ยังไม่มีใบสมัครระดับนี้ การกดส่งจะสร้างใบสมัครใหม่'; note.classList.toggle('update-mode', current); }
-    } catch (error) { console.warn(error); }
-  };
-  const loadCertificateAlerts = async (studentNumber) => {
-    const node = $('#certificate-alert');
-    node.hidden = true;
-    if (!apiBase || !apiHeaders) return;
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_student_certificate_alerts`, {
-        method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: studentNumber }),
-      });
-      if (!response.ok) throw new Error(`certificate alert request failed: ${response.status}`);
-      const rows = await response.json();
-      if (!rows.length) return;
-      node.hidden = false;
-      node.innerHTML = `<strong>ประวัติใบประกาศเดิม</strong><p>ระบบพบรายการที่เกี่ยวข้องกับเลขประจำตัวนี้ กรุณาตรวจสอบสถานะรับใบประกาศ</p>` + rows.map((row) =>
-        `<div class="certificate-row"><b>ชั้น${escapeHtml(row.dhamma_level)} · ปี ${escapeHtml(row.exam_year_be || 'ไม่ระบุ')}</b><span>ใบประกาศเลขที่ ${escapeHtml(row.certificate_no || 'รอข้อมูล')}</span><span>ชื่อในประวัติเดิม: ${escapeHtml(row.legacy_full_name || 'ไม่ระบุ')}</span><span>ปัจจุบัน: ม.${escapeHtml(row.grade_level)} ห้อง ${escapeHtml(row.room_no)} · ครูที่ปรึกษา ${escapeHtml([row.advisor_1, row.advisor_2].filter(Boolean).join(' และ ') || 'รอข้อมูล')}</span><small>${escapeHtml(row.pickup_message)}</small></div>`).join('');
-    } catch (error) { console.warn(error); }
-  };
-  registrationForm.elements.studentNumber.addEventListener('input', () => {
-    verifiedStudent = null;
-    existingRegistrations = [];
-    lockedLevel = null;
-    $('#identity-preview').hidden = true;
-    $('#certificate-alert').hidden = true;
-    $('#self-edit-panel').hidden = true;
-    $('#registration-mode-note').hidden = true;
-  });
-  registrationForm.elements.level.addEventListener('change', () => {
-    if (lockedLevel) { registrationForm.elements.level.value = lockedLevel; return; }
-    const current = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
-    const note = $('#registration-mode-note');
-    if (note && verifiedStudent) { note.hidden = false; note.textContent = current ? 'มีใบสมัครระดับนี้อยู่แล้ว การกดส่งจะอัปเดตข้อมูลใบสมัครเดิม ไม่สร้างรายการซ้ำ' : 'ยังไม่มีใบสมัครระดับนี้ การกดส่งจะสร้างใบสมัครใหม่'; note.classList.toggle('update-mode', current); }
-  });
-  $('#save-self-data').addEventListener('click', async (event) => {
-    const panel = $('#self-edit-panel');
-    const first = registrationForm.elements.selfFirstName.value.trim();
-    const last = registrationForm.elements.selfLastName.value.trim();
-    if (!first || !last) { registrationForm.elements.selfFirstName.reportValidity(); registrationForm.elements.selfLastName.reportValidity(); return; }
-    event.currentTarget.disabled = true;
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/public_update_student_self`, { method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_student_number: registrationForm.elements.studentNumber.value.trim(), current_full_name: verifiedStudent?.full_name, requested_title: registrationForm.elements.selfTitle.value, requested_first_name: first, requested_last_name: last, requested_citizen_id: registrationForm.elements.selfCitizenId.value.trim(), requested_birth_date_be: registrationForm.elements.selfBirthDate.value.trim() }) });
-      if (!response.ok) throw new Error(`self update failed: ${response.status}`);
-      const rows = await response.json();
-      const result = Array.isArray(rows) ? rows[0] : rows;
-      $('#registration-message').textContent = result?.message || 'บันทึกข้อมูลแล้ว';
-      if (result?.saved) { verifiedStudent.full_name = [registrationForm.elements.selfTitle.value, first, last].filter(Boolean).join(' '); panel.hidden = true; }
-    } catch (error) { console.warn(error); $('#registration-message').textContent = 'บันทึกข้อมูลไม่สำเร็จ กรุณาตรวจรูปแบบข้อมูลแล้วลองใหม่'; }
-    finally { event.currentTarget.disabled = false; }
-  });
-  registrationForm.querySelectorAll('.wizard-next').forEach((button) => button.addEventListener('click', async () => {
-    const section = wizardSteps[currentStep - 1];
-    const invalid = [...section.querySelectorAll('[required]')].find((field) => !field.checkValidity());
-    if (invalid) { invalid.reportValidity(); return; }
-    if (currentStep === 1) {
-      button.disabled = true;
-      try {
-        if (!(await verifyStudent())) return;
-      } finally {
-        button.disabled = false;
-      }
-    }
-    setWizardStep(Math.min(currentStep + 1, 3));
-  }));
-  registrationForm.querySelectorAll('.wizard-back').forEach((button) => button.addEventListener('click', () => setWizardStep(Math.max(currentStep - 1, 1))));
-  $('#registration-form').addEventListener('submit', async (event) => {
+  const saveRosterEdit = (event) => {
     event.preventDefault();
-    if (!event.currentTarget.checkValidity()) { event.currentTarget.reportValidity(); return; }
-    const form = new FormData(event.currentTarget);
-    const message = $('#registration-message');
-    if (!apiBase || !apiHeaders) {
-      message.textContent = 'ขณะนี้ยังไม่เปิดรับสมัครจริง ระบบจะเปิดให้บันทึกเมื่อเจ้าหน้าที่ประกาศช่วงรับสมัครและเชื่อม API ครบแล้ว';
-      return;
-    }
-    if (!registrationOpen) {
-      message.textContent = 'ขณะนี้ยังไม่เปิดรับสมัคร กรุณารอติดตามประกาศจากโรงเรียน';
-      return;
-    }
-    if (!verifiedStudent || !form.identityConfirmed.checked) {
-      message.textContent = 'กรุณาค้นเลขประจำตัวและยืนยันว่าข้อมูลทะเบียนเป็นของคุณก่อนส่งใบสมัคร';
-      setWizardStep(2);
-      return;
-    }
-    if (verifiedStudent.guidance_status === 'completed') {
-      message.textContent = 'พบประวัติชั้นเอกแล้ว ไม่จำเป็นต้องสมัครต่อ หากมีความประสงค์สอบซ้ำให้ติดต่อเจ้าหน้าที่';
-      return;
-    }
-    const submitButton = event.currentTarget.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    message.textContent = 'กำลังตรวจสอบข้อมูล…';
+    const original = $('#edit-original-number').value.trim();
+    const number = $('#edit-number').value.trim();
+    const name = $('#edit-name').value.trim();
+    if (!number || !name) { $('#roster-form-message').textContent = 'กรุณากรอกเลขประจำตัวและชื่อ - สกุล'; return; }
+    const edits = rosterEdits();
+    const updated = { number, name, grade:$('#edit-grade').value, room:$('#edit-room').value, citizen:$('#edit-citizen').value.trim(), birth_iso:$('#edit-birth').value, advisor_1:$('#edit-advisor-one').value.trim(), advisor_2:$('#edit-advisor-two').value.trim() };
+    if (original && rosterRows.some((row) => row.number === original)) edits.overrides[original] = updated;
+    else if (original) { const index = (edits.extras || []).findIndex((row) => row.number === original); if (index >= 0) edits.extras[index] = { ...edits.extras[index], ...updated }; else edits.extras.push(updated); }
+    else edits.extras.push({ ...updated, education:updated.grade === 'higher' ? 'อุดมศึกษา' : 'มัธยม', application_level:suggestedLevel(), previous:'', notes:'', special_needs:false, exam_status:'' });
+    localStorage.setItem(rosterOverrideKey, JSON.stringify(edits));
+    state.grade = updated.grade; state.room = updated.room;
+    $('#grade-select').value = state.grade; $('#room-select').value = state.room;
+    loadRows(); render(); closeRosterModal(); setStatus('บันทึกการแก้ไขรายชื่อไว้ในเครื่องแล้ว','#167047');
+  };
+  const loadRosterData = async () => {
     try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/submit_public_registration_v2`, {
-        method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({
-          requested_year: form.get('year'),
-          requested_student_number: form.get('studentNumber'),
-          requested_full_name: verifiedStudent?.full_name,
-          requested_band: form.get('band'),
-          requested_level: registrationForm.elements.level.value,
-        }),
-      });
-      if (!response.ok) throw new Error(`registration request failed: ${response.status}`);
-      const rows = await response.json();
-      const result = Array.isArray(rows) ? rows[0] : rows;
-      const wasExisting = existingRegistrations.some((item) => item.dhamma_level === registrationForm.elements.level.value);
-      message.textContent = result?.reference_code
-        ? `${wasExisting ? 'อัปเดตใบสมัครเดิมแล้ว' : result.message} เลขอ้างอิง ${result.reference_code}`
-        : (result?.message || 'ระบบไม่สามารถยืนยันผลการสมัครได้');
+      const response = await fetch('data/roster-2569.json', { cache:'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      rosterRows = Array.isArray(payload.rows) ? payload.rows : [];
+      loadRows(); render(); setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047');
     } catch (error) {
-      console.warn(error);
-      message.textContent = 'เชื่อมต่อระบบรับสมัครไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
-    } finally {
-      submitButton.disabled = false;
+      setStatus(demoMode ? 'โหมดทดลอง · โหลดรายชื่อจริงไม่สำเร็จ' : 'เชื่อมต่อรายชื่อไม่สำเร็จ', '#a04b40');
     }
-  });
-  $('#lookup-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const query = $('#lookup-input').value.trim();
-    const resultNode = $('#lookup-result');
-    if (!query) { resultNode.textContent = 'กรุณากรอกเลขประจำตัวหรือชื่อ-นามสกุล'; return; }
-    if (!apiBase || !apiHeaders) {
-      resultNode.textContent = 'ยังไม่มีข้อมูลประกาศผู้มีสิทธิ์สอบ ห้องสอบ เลขที่สอบ หรือผลสอบในระบบ';
-      return;
+  };
+  const exportExcel = () => {
+    const escapeHtml = (value) => esc(value).replace(/\n/g, '<br>');
+    const levelTitle = `ศ.${state.level === 'ตรี' ? '5' : '6'} ${state.level}`;
+    const splitName = (name) => { const parts = String(name || '').trim().split(/\s+/); const prefix = ['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง'].includes(parts[0]) ? parts.shift() : ''; return [prefix, parts.shift() || '', parts.join(' ')]; };
+    const isTri = state.level === 'ตรี';
+    const officialRows = state.rows.map((row, index) => { const [prefix, firstName, lastName] = splitName(row.name); const examNote = row.special_needs ? 'นักเรียนพิเศษ ไม่ต้องสอบ' : row.exam_status === 'not_exam' ? `ไม่สอบ เลขใบประกาศเดิม ${row.previous}` : row.exam_status === 'exam' ? 'สอบ' : ''; const previousMatch = String(row.previous || '').match(/(\d{4}).*?(\d+)$/); const previousYear = previousMatch?.[1] || ''; const previousNumber = previousMatch?.[2] || ''; const currentCouncil = row.school_council || 'คณะจังหวัดนครปฐม'; const previousCouncil = row.previous_school_council || currentCouncil; const tail = isTri ? `<td>${escapeHtml(`${examNote}${row.notes ? ` · ${row.notes}` : ''}`)}</td>` : `<td>${escapeHtml(previousYear)}</td><td>${escapeHtml(previousNumber)}</td><td>${escapeHtml(previousCouncil)}</td><td>${escapeHtml(`${examNote}${row.notes ? ` · ${row.notes}` : ''}`)}</td>`; return `<tr><td>${index + 1}</td><td>${escapeHtml(prefix)}</td><td>${escapeHtml(firstName)}</td><td>${escapeHtml(lastName)}</td><td>${escapeHtml(row.citizen)}</td><td>${escapeHtml(row.application_level)}</td><td>ม.${state.grade} / ห้อง ${state.room}</td><td>${escapeHtml(formatThaiDate(row.birth_iso))}</td><td>${escapeHtml(row.organization_name)}</td><td>ไร่ขิง</td><td>สามพราน</td><td>นครปฐม</td><td>${escapeHtml(row.temple_affiliation)}</td><td></td><td></td><td>นครปฐม</td><td>${escapeHtml(currentCouncil)}</td>${tail}</tr>`; }).join('');
+    const previousTitle = state.level === 'โท' ? 'ประโยคเดิม (ธรรมศึกษาชั้นตรี)' : 'ประโยคเดิม (ธรรมศึกษาชั้นโท)';
+    const previousGroup = isTri ? '<th rowspan="2" class="group">หมายเหตุ</th>' : `<th colspan="3" class="group">${previousTitle}</th><th rowspan="2" class="group">หมายเหตุ</th>`;
+    const previousSubhead = isTri ? '' : '<th class="subhead">พ.ศ.</th><th class="subhead">เลขที่ ปกศ.</th><th class="subhead">สำนักเรียนวัด/คณะจังหวัด</th>';
+    const html = `<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${levelTitle} ม.${state.grade} ห้อง ${state.room}</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,'Tahoma',sans-serif;color:#111;margin:0}h1,h2,p{text-align:center;margin:4px}h1{font-size:16pt}h2{font-size:12pt}p{font-size:9pt}.meta{width:100%;margin:10px 0 5px;border-collapse:collapse}.meta td{padding:4px;border:1px solid #777;text-align:left}.meta b{font-weight:700}.official{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt}.official th,.official td{border:1px solid #222;padding:3px;text-align:center;vertical-align:middle;height:25px;word-break:break-word}.official th{background:#fffbd1;font-weight:700}.official .group{font-size:8pt;height:34px}.official .subhead{font-size:7pt;height:24px}small{font-size:7pt;color:#555}.note{margin-top:7px;text-align:left;font-size:8pt}</style></head><body><h1>บัญชีสำมะโนครัวผู้ขอเข้าสอบความรู้ ธรรมศึกษาชั้น${state.level}</h1><h2>ในสนามหลวง พ.ศ. 2569</h2><table class="meta"><tr><td><b>ชื่อสนามสอบ</b><br>โรงเรียนวัดไร่ขิงวิทยา</td><td><b>ตำบล</b><br>ไร่ขิง</td><td><b>อำเภอ</b><br>สามพราน</td><td><b>จังหวัด</b><br>นครปฐม</td><td><b>รหัสสนามสอบ</b><br>256101</td><td><b>ชั้น / ห้อง</b><br>ม.${state.grade} / ห้อง ${state.room}</td></tr></table><table class="official"><thead><tr><th rowspan="2" class="group">เลขที่</th><th rowspan="2" class="group">คำนำ</th><th rowspan="2" class="group">ชื่อ</th><th rowspan="2" class="group">นามสกุล</th><th rowspan="2" class="group">เลขที่บัตรประชาชน</th><th rowspan="2" class="group">ระดับธรรมศึกษา</th><th rowspan="2" class="group">ชั้น / แผนก / ห้อง</th><th rowspan="2" class="group">เกิด</th><th colspan="4" class="group">สังกัดองค์กร / สถาบัน / สถานศึกษา ที่ส่งเข้าสมัคร</th><th colspan="4" class="group">สำนักศาสนศึกษา / วัด / สำนักสงฆ์ / ฯลฯ ที่จัดสอน</th><th rowspan="2" class="group">สำนักเรียน</th>${previousGroup}</tr><tr><th class="subhead">ชื่อองค์กร</th><th class="subhead">ตำบล</th><th class="subhead">อำเภอ</th><th class="subhead">จังหวัด</th><th class="subhead">สังกัดวัด</th><th class="subhead">ตำบล</th><th class="subhead">อำเภอ</th><th class="subhead">จังหวัด</th>${previousSubhead}</tr></thead><tbody>${officialRows}</tbody></table><p class="note">ครูที่ปรึกษา 1: ${escapeHtml($('#advisor-one').value)} &nbsp;&nbsp; ครูที่ปรึกษา 2: ${escapeHtml($('#advisor-two').value)} &nbsp;&nbsp; ส่งออกจากระบบกรอกข้อมูลธรรมศึกษา</p></body></html>`;
+    const blob = new Blob([html], { type:'application/vnd.ms-excel;charset=utf-8' });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${levelTitle}-ม${state.grade}-ห้อง${state.room}.xls`; link.click(); URL.revokeObjectURL(link.href); setStatus('ดาวน์โหลดแบบฟอร์ม Excel แล้ว','#167047');
+  };
+  const loadRoom = () => { loadRows(); render(); };
+  const printableRow = (student) => {
+    const saved = JSON.parse(localStorage.getItem(`dharma-direct-form-v3:${student.grade}:${student.room}`) || '{}');
+    return { organization_name:'โรงเรียนวัดไร่ขิงวิทยา', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student, ...saved[student.number] };
+  };
+  const printCurrentRoom = () => {
+    pendingPrint = 'room';
+    $('#print-preview-title').textContent = `พิมพ์ ${gradeLabel(state.grade)} / ${roomLabel(state.room)}`;
+    $('#print-preview-note').textContent = `จะแสดงเฉพาะนักเรียนใน ${gradeLabel(state.grade)} ${roomLabel(state.room)} พร้อมจัดหน้า A4 แนวนอน`;
+    $('#print-preview-modal').hidden = false;
+  };
+  const printAll = () => {
+    if (!rosterRows.length) { setStatus('ยังไม่มีรายชื่อสำหรับพิมพ์ทั้งหมด','#a04b40'); return; }
+    const rank = (value) => value === 'higher' ? 999 : Number(value);
+    const rows = rosterRows.map(printableRow).sort((a, b) => rank(a.grade) - rank(b.grade) || rank(a.room) - rank(b.room) || String(a.number).localeCompare(String(b.number), 'th'));
+    $('#all-print-sheet').innerHTML = `<h1>สรุปตรวจข้อมูลสมัครธรรมศึกษา ปี 2569</h1><p class="all-print-meta">โรงเรียนวัดไร่ขิงวิทยา · จำนวน ${rows.length.toLocaleString('th-TH')} คน</p><table><thead><tr><th>ที่</th><th>ชั้น / ห้อง</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>เลขประชาชน</th><th>วันเดือนปีเกิด (พ.ศ.)</th><th>ระดับสมัคร</th><th>ใบประกาศเดิม</th><th>สถานะ</th></tr></thead><tbody>${rows.map((row, index) => { const complete = rowComplete(row); const partial = Boolean(normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes); const status = row.special_needs ? 'พิเศษ' : complete ? 'กรอกแล้ว' : partial ? 'ข้อมูลไม่ครบ' : 'ยังไม่กรอก'; return `<tr><td>${index + 1}</td><td>${esc(gradeLabel(row.grade))} / ${esc(roomLabel(row.room))}</td><td>${esc(row.number)}</td><td>${esc(row.name)}</td><td>${esc(row.citizen || '')}</td><td>${esc(formatThaiDate(row.birth_iso))}</td><td>${esc(row.application_level || '')}</td><td>${esc(row.previous || '')}</td><td class="${complete ? 'complete' : partial ? 'partial' : 'empty'}">${status}</td></tr>`; }).join('')}</tbody></table>`;
+    pendingPrint = 'all';
+    $('#print-preview-title').textContent = 'พิมพ์ข้อมูลทั้งหมด';
+    $('#print-preview-note').textContent = `จะแสดงรายชื่อทั้งหมด ${rows.length.toLocaleString('th-TH')} คน แยกตามชั้นและห้อง ในรูปแบบสรุป A4 แนวนอน`;
+    $('#print-preview-modal').hidden = false;
+  };
+  const closePrintPreview = () => { $('#print-preview-modal').hidden = true; pendingPrint = ''; };
+  const printInNewWindow = () => {
+    const mode = pendingPrint;
+    const source = mode === 'all' ? $('#all-print-sheet') : $('#print-area');
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) return false;
+    const styles = Array.from(document.styleSheets).map((sheet) => { try { return Array.from(sheet.cssRules).map((rule) => rule.cssText).join('\n'); } catch { return ''; } }).join('\n');
+    const title = mode === 'all' ? 'พิมพ์ข้อมูลทั้งหมด' : `พิมพ์ ${gradeLabel(state.grade)} ${roomLabel(state.room)}`;
+    const bodyClass = mode === 'all' ? 'printing-all' : 'printing-room';
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html lang="th"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>${styles}</style></head><body class="${bodyClass}">${source.cloneNode(true).outerHTML}</body></html>`);
+    printWindow.document.close();
+    window.setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.addEventListener('afterprint', () => printWindow.close(), { once:true }); }, 500);
+    return true;
+  };
+  const confirmPrint = () => {
+    const mode = pendingPrint;
+    $('#print-preview-modal').hidden = true;
+    setStatus(mode === 'all' ? 'กำลังเปิดหน้าพิมพ์ข้อมูลทั้งหมด...' : `กำลังเปิดหน้าพิมพ์ ${gradeLabel(state.grade)} ${roomLabel(state.room)}...`, '#167047');
+    if (!printInNewWindow()) {
+      document.body.classList.add(mode === 'all' ? 'printing-all' : 'printing-room');
+      if (typeof window.print === 'function') window.print();
+      else setStatus('เบราว์เซอร์นี้ไม่รองรับการพิมพ์', '#a04b40');
     }
-    resultNode.textContent = 'กำลังตรวจสอบข้อมูล…';
-    try {
-      const response = await fetch(`${apiBase}/rest/v1/rpc/lookup_public_exam_status`, {
-        method: 'POST', headers: apiHeaders,
-        body: JSON.stringify({ requested_year: activeAcademicYear, requested_query: query }),
-      });
-      if (!response.ok) throw new Error(`lookup request failed: ${response.status}`);
-      const rows = await response.json();
-      if (!rows.length) {
-        resultNode.textContent = 'ยังไม่มีข้อมูลประกาศทางการ หรือไม่พบรายการที่ตรงกัน';
-        return;
-      }
-      resultNode.innerHTML = rows.map((row) =>
-        `<strong>${escapeHtml(row.full_name)}</strong> · ${escapeHtml(row.dhamma_level)}<br>` +
-        `สถานะสิทธิ์สอบ: ${escapeHtml(row.eligibility_status || 'รอข้อมูล')} · ` +
-        `ห้องสอบ: ${escapeHtml(row.room_name || 'รอข้อมูล')} · เลขที่สอบ: ${escapeHtml(row.seat_no || 'รอข้อมูล')} · ` +
-        `ผลสอบ: ${escapeHtml(row.result_status || 'รอข้อมูล')}${row.score ? ` (${escapeHtml(row.score)})` : ''}`
-      ).join('<hr>');
-    } catch (error) {
-      console.warn(error);
-      resultNode.textContent = 'เชื่อมต่อระบบตรวจสอบไม่สำเร็จ กรุณาลองใหม่ภายหลัง';
-    }
-  });
-  loadPublicMetrics();
-  loadRegistrationWindow();
+  };
+  window.addEventListener('afterprint', () => { document.body.classList.remove('printing-room','printing-all'); $('#all-print-sheet').innerHTML = ''; setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047'); });
+  $('#grade-select').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#room-select').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join(''); $('#grade-select').value = state.grade; $('#room-select').value = state.room;
+  $('#edit-grade').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#edit-room').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join('');
+  $('#grade-select').addEventListener('change', (event) => { state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
+  $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal));
+  $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });
+  $('#font-upload').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (result) => { const style = document.createElement('style'); style.dataset.printFont = 'true'; style.textContent = `@font-face{font-family:UploadedPrintFont;src:url(${result.target.result})}@media print{body,.paper{font-family:UploadedPrintFont,Sarabun,sans-serif}}`; document.head.appendChild(style); setStatus('ใช้ฟอนต์นี้เฉพาะตอนพิมพ์','#167047'); }; reader.readAsDataURL(file); });
+  setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData();
 })();
