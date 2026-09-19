@@ -17,6 +17,8 @@ returns table (
   room_no smallint,
   advisor_1 text,
   advisor_2 text,
+  certificate_no text,
+  certificate_year text,
   legacy_level text,
   match_status text
 )
@@ -33,6 +35,8 @@ as $$
     c.room_no,
     t1.display_name,
     t2.display_name,
+    prior.certificate_no,
+    prior.exam_year_be,
     prior.level,
     prior.match_status
   from academic_years y
@@ -41,7 +45,7 @@ as $$
   left join teachers t1 on t1.id = c.advisor_1_id
   left join teachers t2 on t2.id = c.advisor_2_id
   left join lateral (
-    select lc.certificate_no, lc.level, cm.status as match_status
+    select lc.certificate_no, lc.exam_year_be, lc.level, cm.status as match_status
     from certificate_matches cm
     join legacy_certificates lc on lc.id = cm.legacy_certificate_id
     where cm.student_id = s.id

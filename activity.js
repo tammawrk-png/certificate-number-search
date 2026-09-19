@@ -36,6 +36,10 @@
     if (digits.length < 13) return 'incomplete';
     return validThaiId(digits) ? 'valid' : 'invalid';
   };
+  // Keep the incomplete state separate from the legacy `.incomplete` rule.
+  // The old stylesheet used that class for a warning overlay that hid the
+  // input value, which made partially entered IDs appear to disappear.
+  const citizenVisualClass = (status) => status === 'incomplete' ? 'citizen-incomplete' : status;
   const formatThaiDate = (iso) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return '';
     const [year, month, day] = iso.split('-');
@@ -52,28 +56,46 @@
     return { level:'', basis:'ต้องตรวจสอบใบประกาศเดิมก่อน' };
   };
   const suggestedLevel = () => recommendationFor({}).level;
-  const canSkipExam = (row) => Boolean(row.special_needs || String(row.previous || '').trim());
+  const requiresPreviousYear = (rowOrLevel) => {
+    const level = typeof rowOrLevel === 'string' ? rowOrLevel : rowOrLevel?.application_level;
+    return level === 'โท' || level === 'เอก';
+  };
+  const hasPreviousCertificate = (row) => Boolean(
+    String(row.previous || '').trim()
+      && (!requiresPreviousYear(row) || /^25\d{2}$/.test(String(row.previous_certificate_year || '').trim()))
+  );
+  const canSkipExam = (row) => Boolean(row.special_needs || hasPreviousCertificate(row));
   const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
   const rosterEdits = () => { try { return JSON.parse(localStorage.getItem(rosterOverrideKey) || '{"overrides":{},"extras":[]}'); } catch { return { overrides:{}, extras:[] }; } };
   const studentsForRoom = () => {
     if (!rosterRows.length) return demoStudents[`${state.grade}:${state.room}`] || [];
     const edits = rosterEdits();
-    const base = rosterRows.map((student) => ({ ...student, ...(edits.overrides?.[student.number] || {}) })).filter((student) => String(student.grade) === state.grade && String(student.room) === state.room);
+    const base = rosterRows.map((student) => {
+      const override = edits.overrides?.[student.number] || {};
+      return {
+        ...student,
+        ...override,
+        ...(student.match_status === 'auto_matched' && String(student.previous || '').trim() && !String(override.previous || '').trim()
+          ? { previous: student.previous, legacy_level: student.legacy_level, match_status: student.match_status }
+          : {}),
+      };
+    }).filter((student) => String(student.grade) === state.grade && String(student.room) === state.room);
     return base.concat((edits.extras || []).filter((student) => String(student.grade) === state.grade && String(student.room) === state.room));
   };
   const loadRows = () => {
     const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}');
     state.rows = studentsForRoom().map((student) => ({
-      organization_name:'โรงเรียนวัดไร่ขิงวิทยา', organization_location:'ไร่ขิง / สามพราน / นครปฐม', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student, ...saved[student.number],
+      organization_name:'โรงเรียนวัดไร่ขิงวิทยา', organization_location:'ไร่ขิง / สามพราน / นครปฐม', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student,
+      ...saved[student.number],
+      ...(student.match_status === 'auto_matched' && String(student.previous || '').trim() && !String(saved[student.number]?.previous || '').trim()
+        ? { previous: student.previous, legacy_level: student.legacy_level, match_status: student.match_status }
+        : {}),
     })).map((row) => { if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = ''; return row; });
   };
   const rowComplete = (row) => Boolean(validThaiId(row.citizen) && row.birth_iso && row.application_level && (row.exam_status === 'exam' || (row.exam_status === 'not_exam' && canSkipExam(row))));
   const fieldClass = (row) => citizenState(row.citizen);
-  const checkIcon = (row) => citizenState(row.citizen) === 'incomplete'
-    ? '<span class="field-hint invalid-hint">กรอกไม่ครบ 13 หลัก</span>'
-    : citizenState(row.citizen) === 'invalid'
-      ? '<span class="field-hint invalid-hint">เลขไม่ผ่านการตรวจสอบ</span>'
-      : '';
+  const requiredMarker = (label) => `<span class="required-marker" title="${esc(label)}" aria-label="${esc(label)}">!</span>`;
+  const valueOrInput = ({ value, field, placeholder, label, type = 'text', inputmode = '' }) => `<span class="field-shell ${value ? 'has-value' : 'needs-input'}">${value ? '' : requiredMarker(label)}<input class="minimal-field ${value ? 'has-value' : ''}" data-field="${field}" type="${type}" value="${esc(value || '')}" ${inputmode ? `inputmode="${inputmode}"` : ''} placeholder="${esc(placeholder)}" aria-label="${esc(label)}" /></span>`;
   const option = (value, label, current, recommendation = '') => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}${recommendation === value ? ' · แนะนำ' : ''}</option>`;
   const render = () => {
     const students = state.rows;
@@ -82,16 +104,16 @@
     $('#advisor-two').value = students[0]?.advisor_2 || '—';
     $('#form-title').textContent = 'แบบตรวจข้อมูลสมัครธรรมศึกษา';
     $('#student-body').innerHTML = students.length ? students.map((row, index) => {
-      const complete = rowComplete(row); const partial = Boolean(normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes); const code = levelCode[row.application_level] || 'tri'; const recommendation = recommendationFor(row);
+      const complete = rowComplete(row); const partial = Boolean(normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes); const recommendation = recommendationFor(row); const selectedApplicationLevel = row.application_level || recommendation.level; const code = levelCode[selectedApplicationLevel] || 'tri';
       const rowKind = row.special_needs ? 'special' : row.exam_status === 'not_exam' ? 'not-exam' : row.exam_status === 'exam' ? 'exam-selected' : '';
       const noExamDisabled = !canSkipExam(row);
       return `<tr class="student-row ${complete ? 'complete' : partial ? 'partial' : 'empty'} ${rowKind}" data-number="${esc(row.number)}" data-application-level="${code}">
         <td>${index + 1}</td><td>${esc(row.number)}</td><td><button type="button" class="student-name-button" data-edit-number="${esc(row.number)}" title="กดเพื่อแก้ไขหรือกรอกข้อมูลรายคน">${esc(row.name)}</button></td>
-        <td><div class="citizen-cell"><input class="citizen-input ${fieldClass(row)}" data-field="citizen" inputmode="numeric" maxlength="13" value="${esc(row.citizen || '')}" placeholder="เลข 13 หลัก" aria-label="เลขประชาชน ${esc(row.name)}" />${checkIcon(row)}</div></td>
-        <td><div class="birth-cell"><button type="button" class="date-display" data-open-date aria-label="เลือกวันเดือนปีเกิด ${esc(row.name)}"><span data-be-date>${esc(formatThaiDate(row.birth_iso)) || 'ว/ด/ป พ.ศ.'}</span></button><input class="date-picker-input" data-field="birth_iso" type="date" value="${esc(row.birth_iso || '')}" aria-label="วันเดือนปีเกิด ${esc(row.name)}" /></div></td>
+        <td><div class="citizen-cell"><span class="field-shell ${row.citizen ? 'has-value' : 'needs-input'}">${validThaiId(row.citizen) ? '' : requiredMarker(row.citizen ? 'ตรวจสอบเลขประชาชน' : 'ต้องกรอกเลขประชาชน 13 หลัก')}<input class="citizen-input minimal-field ${citizenVisualClass(fieldClass(row))}" style="color:${validThaiId(row.citizen) ? '#167047' : row.citizen ? '#a04b40' : 'inherit'} !important;border-color:transparent !important;background:transparent !important" data-field="citizen" inputmode="numeric" maxlength="13" value="${esc(row.citizen || '')}" placeholder="" aria-label="เลขประชาชน ${esc(row.name)}" /></span></div></td>
+        <td><div class="birth-cell ${row.birth_iso ? 'has-value' : 'needs-value'}">${!row.birth_iso ? requiredMarker('ต้องเลือกวันเดือนปีเกิด') : ''}<button type="button" class="date-display ${row.birth_iso ? 'filled' : 'needs-input'}" data-open-date aria-label="เลือกวันเดือนปีเกิด ${esc(row.name)}"><span data-be-date>${esc(formatThaiDate(row.birth_iso)) || 'ว/ด/ป พ.ศ.'}</span></button><input class="date-picker-input" data-field="birth_iso" type="date" value="${esc(row.birth_iso || '')}" aria-label="วันเดือนปีเกิด ${esc(row.name)}" /></div></td>
         <td>${esc(row.education)}</td>
-        <td><div class="level-cell"><select data-field="application_level">${option('ตรี','ตรี',row.application_level,recommendation.level)}${option('โท','โท',row.application_level,recommendation.level)}${option('เอก','เอก',row.application_level,recommendation.level)}</select><span class="recommend-hint">${recommendation.level ? `ควรสอบ: ${recommendation.level}` : recommendation.basis}</span></div></td>
-        <td><input data-field="previous" value="${esc(row.previous || '')}" placeholder="เลขเดิม" />${row.match_status === 'auto_matched' ? `<span class="match-hint">จับคู่แล้ว${row.legacy_level ? ` · เดิม${esc(row.legacy_level)}` : ''}</span>` : row.match_status === 'review' ? '<span class="match-hint review">ต้องตรวจ</span>' : ''}</td>
+        <td><div class="level-cell">${recommendation.level ? `<span class="field-shell ${selectedApplicationLevel ? 'has-value' : 'needs-input'}">${selectedApplicationLevel ? '' : requiredMarker('ต้องเลือกระดับที่จะสมัคร')}<select data-field="application_level">${option('ตรี','ตรี',selectedApplicationLevel,recommendation.level)}${option('โท','โท',selectedApplicationLevel,recommendation.level)}${option('เอก','เอก',selectedApplicationLevel,recommendation.level)}</select></span>` : `<button type="button" class="level-review-trigger" data-edit-number="${esc(row.number)}" title="กดเพื่อตรวจสอบใบประกาศเดิมก่อนเลือกระดับ">ตรวจสอบใบประกาศเดิมก่อนเลือก</button>`}</div></td>
+        <td><div class="previous-cell"><button type="button" class="previous-display" data-edit-previous aria-label="แก้ไขข้อมูลประโยคเดิม">${esc(row.previous ? `${row.previous_certificate_year ? `${row.previous_certificate_year} · ` : ''}${row.previous}` : 'เลขเดิม')}</button><input class="previous-editor minimal-field" data-field="previous" value="${esc(row.previous || '')}" placeholder="เลขที่ ปกศ." aria-label="เลขที่ ปกศ." hidden /><input class="previous-year-editor minimal-field" data-field="previous_certificate_year" value="${esc(row.previous_certificate_year || '')}" placeholder="พ.ศ. ที่จบ" aria-label="พ.ศ. ที่จบประโยคเดิม" inputmode="numeric" maxlength="4" hidden />${row.match_status === 'auto_matched' ? `<span class="match-hint">จับคู่แล้ว${row.legacy_level ? ` · เดิม${esc(row.legacy_level)}` : ''}</span>` : row.match_status === 'review' ? '<span class="match-hint review">ต้องตรวจ</span>' : ''}</div></td>
         <td><div class="exam-choice"><label><input data-field="exam_status" data-exam-value="exam" type="checkbox" ${row.exam_status === 'exam' ? 'checked' : ''} /> สอบ</label><label class="no-exam-option"><input data-field="exam_status" data-exam-value="not_exam" type="checkbox" ${row.exam_status === 'not_exam' ? 'checked' : ''} ${noExamDisabled ? 'disabled' : ''} /> ไม่สอบ</label><label class="special-option"><input data-field="special_needs" type="checkbox" ${row.special_needs ? 'checked' : ''} /> นักเรียนพิเศษ ไม่ต้องสอบ</label></div></td>
         <td class="detail-column"><input data-field="organization_name" value="${esc(row.organization_name)}" /></td><td class="detail-column"><input data-field="organization_location" value="${esc(row.organization_location)}" /></td><td class="detail-column"><input data-field="temple_affiliation" value="${esc(row.temple_affiliation)}" /></td><td class="detail-column"><input data-field="school_council" value="${esc(row.school_council)}" /></td><td class="detail-column"><input data-field="notes" value="${esc(row.notes || '')}" placeholder="หมายเหตุ" /></td>
         <td><span class="status-chip ${complete ? 'complete' : partial ? 'partial' : 'empty'}">${row.special_needs ? 'พิเศษ' : complete ? 'กรอกแล้ว' : partial ? 'ข้อมูลไม่ครบ' : 'ยังไม่กรอก'}</span></td>
@@ -108,20 +130,21 @@
     document.querySelectorAll('#student-body tr[data-number]').forEach((tr) => {
       tr.querySelectorAll('[data-field]').forEach((field) => {
         field.addEventListener('input', () => {
-          if (field.dataset.field === 'citizen') { field.classList.remove('valid','invalid','incomplete'); const status = citizenState(field.value); if (status) field.classList.add(status); }
+          if (field.dataset.field === 'citizen') { field.classList.remove('valid','invalid','incomplete','citizen-incomplete'); const status = citizenState(field.value); if (status) field.classList.add(citizenVisualClass(status)); field.style.color = status === 'valid' ? '#167047' : status ? '#a04b40' : 'inherit'; field.style.borderColor = 'transparent'; field.style.background = 'transparent'; }
           if (field.dataset.field === 'birth_iso') tr.querySelector('[data-be-date]').textContent = formatThaiDate(field.value) || 'ว/ด/ป พ.ศ.';
-          if (field.dataset.field === 'previous') syncExamCheckboxes(tr);
+          if (field.dataset.field === 'previous' || field.dataset.field === 'previous_certificate_year') syncExamCheckboxes(tr);
         });
         field.addEventListener('change', () => { if (field.dataset.field === 'exam_status' && field.checked) tr.querySelectorAll('[data-field="exam_status"]').forEach((other) => { if (other !== field) other.checked = false; }); updateRow(tr); });
       });
     });
     document.querySelectorAll('[data-edit-number]').forEach((button) => button.addEventListener('click', () => openRosterModal(button.dataset.editNumber)));
+    document.querySelectorAll('[data-edit-previous]').forEach((button) => button.addEventListener('click', () => { const cell = button.closest('.previous-cell'); const inputs = cell?.querySelectorAll('[data-field="previous"], [data-field="previous_certificate_year"]'); if (!inputs?.length) return; button.hidden = true; inputs.forEach((input) => { input.hidden = false; input.addEventListener('blur', () => { setTimeout(() => { if (cell.contains(document.activeElement)) return; const tr = cell.closest('tr[data-number]'); if (tr) updateRow(tr); }, 0); }, { once:false }); }); inputs[0].focus(); }));
     document.querySelectorAll('[data-open-date]').forEach((button) => button.addEventListener('click', () => { const input = button.parentElement.querySelector('input[type="date"]'); if (input?.showPicker) input.showPicker(); else input?.click(); }));
   };
   const syncExamCheckboxes = (tr) => {
     const row = state.rows.find((item) => item.number === tr.dataset.number); if (!row) return;
     const noExam = tr.querySelector('[data-exam-value="not_exam"]');
-    if (noExam) noExam.disabled = !(row.special_needs || String(tr.querySelector('[data-field="previous"]')?.value || '').trim());
+    if (noExam) noExam.disabled = !(row.special_needs || hasPreviousCertificate({ ...row, previous: tr.querySelector('[data-field="previous"]')?.value || '', previous_certificate_year: tr.querySelector('[data-field="previous_certificate_year"]')?.value || '' }));
   };
   const updateRow = (tr) => {
     const row = state.rows.find((item) => item.number === tr.dataset.number); if (!row) return;
@@ -136,6 +159,20 @@
     const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved));
     setStatus(row.citizen && validThaiId(row.citizen) ? 'บันทึกแล้ว · เลขบัตรถูกต้อง' : 'บันทึกแล้ว', validThaiId(row.citizen) ? '#167047' : '#765914'); render();
   };
+  const commitPreviousEdit = (cell) => {
+    const button = cell?.querySelector('[data-edit-previous]');
+    const tr = cell?.closest('tr[data-number]');
+    if (button && button.hidden && tr) updateRow(tr);
+  };
+  document.addEventListener('pointerdown', (event) => {
+    const cell = document.activeElement?.closest?.('.previous-cell');
+    if (cell && !cell.contains(event.target)) setTimeout(() => commitPreviousEdit(cell), 0);
+  }, true);
+  document.addEventListener('click', (event) => {
+    document.querySelectorAll('.previous-cell').forEach((cell) => {
+      if (!cell.contains(event.target)) setTimeout(() => commitPreviousEdit(cell), 0);
+    });
+  }, true);
   const closeRosterModal = () => { $('#roster-modal').hidden = true; $('#roster-form-message').textContent = ''; };
   const openRosterModal = (number = '') => {
     const row = state.rows.find((item) => item.number === number) || { number:'', name:'', grade:state.grade, room:state.room, citizen:'', birth_iso:'', application_level:suggestedLevel() || 'ตรี', previous:'', exam_status:'', special_needs:false, advisor_1:'', advisor_2:'' };
@@ -148,6 +185,7 @@
     $('#edit-birth').value = row.birth_iso || '';
     $('#edit-application-level').value = row.application_level || suggestedLevel() || 'ตรี';
     $('#edit-previous').value = row.previous || '';
+    $('#edit-previous-year').value = row.previous_certificate_year || '';
     $('#edit-exam').checked = row.exam_status === 'exam';
     $('#edit-no-exam').checked = row.exam_status === 'not_exam';
     $('#edit-special').checked = Boolean(row.special_needs);
@@ -159,10 +197,10 @@
     $('#edit-name').focus();
   };
   const syncRosterExamOptions = () => {
-    const hasPrevious = Boolean($('#edit-previous').value.trim());
+    const hasPrevious = Boolean($('#edit-previous').value.trim() && (!requiresPreviousYear($('#edit-application-level').value) || /^25\d{2}$/.test($('#edit-previous-year').value.trim())));
     const special = $('#edit-special').checked;
     $('#edit-no-exam').disabled = !(hasPrevious || special);
-    $('#edit-no-exam-note').textContent = special ? 'นักเรียนพิเศษจะถูกบันทึกเป็นไม่สอบ' : 'การเลือกไม่สอบต้องมีเลขใบประกาศเดิม';
+    $('#edit-no-exam-note').textContent = special ? 'นักเรียนพิเศษจะถูกบันทึกเป็นไม่สอบ' : requiresPreviousYear($('#edit-application-level').value) ? 'การเลือกไม่สอบต้องมี พ.ศ. และเลขใบประกาศเดิม' : 'การเลือกไม่สอบต้องมีเลขใบประกาศเดิม';
     if (special) { $('#edit-no-exam').checked = true; $('#edit-exam').checked = false; }
     else if (!hasPrevious) $('#edit-no-exam').checked = false;
   };
@@ -180,9 +218,11 @@
     if (!number || !name) { $('#roster-form-message').textContent = 'กรุณากรอกเลขประจำตัวและชื่อ - สกุล'; return; }
     const edits = rosterEdits();
     const previous = $('#edit-previous').value.trim();
+    const previous_certificate_year = $('#edit-previous-year').value.trim();
     const special_needs = $('#edit-special').checked;
-    const exam_status = special_needs ? 'not_exam' : $('#edit-exam').checked ? 'exam' : $('#edit-no-exam').checked && previous ? 'not_exam' : '';
-    const updated = { number, name, grade:$('#edit-grade').value, room:$('#edit-room').value, citizen:$('#edit-citizen').value.trim(), birth_iso:$('#edit-birth').value, application_level:$('#edit-application-level').value, previous, exam_status, special_needs, advisor_1:$('#edit-advisor-one').value.trim(), advisor_2:$('#edit-advisor-two').value.trim() };
+    const validPrevious = previous && (!requiresPreviousYear($('#edit-application-level').value) || /^25\d{2}$/.test(previous_certificate_year));
+    const exam_status = special_needs ? 'not_exam' : $('#edit-exam').checked ? 'exam' : $('#edit-no-exam').checked && validPrevious ? 'not_exam' : '';
+    const updated = { number, name, grade:$('#edit-grade').value, room:$('#edit-room').value, citizen:$('#edit-citizen').value.trim(), birth_iso:$('#edit-birth').value, application_level:$('#edit-application-level').value, previous, previous_certificate_year, exam_status, special_needs, advisor_1:$('#edit-advisor-one').value.trim(), advisor_2:$('#edit-advisor-two').value.trim() };
     if (original && rosterRows.some((row) => row.number === original)) edits.overrides[original] = updated;
     else if (original) { const index = (edits.extras || []).findIndex((row) => row.number === original); if (index >= 0) edits.extras[index] = { ...edits.extras[index], ...updated }; else edits.extras.push(updated); }
     else edits.extras.push({ ...updated, education:updated.grade === 'higher' ? 'อุดมศึกษา' : 'มัธยม', notes:'' });
@@ -218,19 +258,23 @@
         payload = chunks.flat();
       }
       rosterRows = (Array.isArray(payload) ? payload : []).map((row) => ({
-        number: row.student_number,
-        name: row.full_name,
-        grade: String(row.grade_level || 'higher'),
-        room: String(row.room_no || 'higher'),
-        education: row.education_band === 'higher_education' ? 'อุดมศึกษา' : 'มัธยม',
-        citizen: '',
-        birth_iso: '',
-        previous: '',
-        legacy_level: row.legacy_level || '',
+        number: row.student_number ?? row.number,
+        name: row.full_name ?? row.name,
+        grade: String(row.grade_level ?? row.grade ?? 'higher'),
+        room: String(row.room_no ?? row.room ?? 'higher'),
+        education: row.education_band ? (row.education_band === 'higher_education' ? 'อุดมศึกษา' : 'มัธยม') : (row.education || 'มัธยม'),
+        citizen: row.citizen_id || row.citizen || '',
+        birth_iso: row.birth_iso || '',
+        previous: row.certificate_no || row.previous || '',
+        previous_certificate_year: row.certificate_year || row.previous_certificate_year || '',
+        legacy_level: String(row.legacy_level || '').replace(/^ธรรมศึกษาชั้น/, ''),
         match_status: row.match_status || '',
-        application_level: row.grade_level === 1 || row.grade_level === 4 ? 'ตรี' : '',
+        application_level: row.application_level || (Number(row.grade_level ?? row.grade) === 1 || Number(row.grade_level ?? row.grade) === 4 ? 'ตรี' : ''),
         advisor_1: row.advisor_1 || '', advisor_2: row.advisor_2 || '',
       }));
+      rosterRows.forEach((row) => {
+        if (row.match_status === 'auto_matched' && row.application_level === row.legacy_level) row.application_level = '';
+      });
       loadRows(); render(); setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047');
     } catch (error) {
       rosterRows = [];
@@ -243,7 +287,7 @@
     const levelTitle = `ศ.${state.level === 'ตรี' ? '5' : '6'} ${state.level}`;
     const splitName = (name) => { const parts = String(name || '').trim().split(/\s+/); const prefix = ['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง'].includes(parts[0]) ? parts.shift() : ''; return [prefix, parts.shift() || '', parts.join(' ')]; };
     const isTri = state.level === 'ตรี';
-    const officialRows = state.rows.map((row, index) => { const [prefix, firstName, lastName] = splitName(row.name); const examNote = row.special_needs ? 'นักเรียนพิเศษ ไม่ต้องสอบ' : row.exam_status === 'not_exam' ? `ไม่สอบ เลขใบประกาศเดิม ${row.previous}` : row.exam_status === 'exam' ? 'สอบ' : ''; const previousMatch = String(row.previous || '').match(/(\d{4}).*?(\d+)$/); const previousYear = previousMatch?.[1] || ''; const previousNumber = previousMatch?.[2] || ''; const currentCouncil = row.school_council || 'คณะจังหวัดนครปฐม'; const previousCouncil = row.previous_school_council || currentCouncil; const tail = isTri ? `<td>${escapeHtml(`${examNote}${row.notes ? ` · ${row.notes}` : ''}`)}</td>` : `<td>${escapeHtml(previousYear)}</td><td>${escapeHtml(previousNumber)}</td><td>${escapeHtml(previousCouncil)}</td><td>${escapeHtml(`${examNote}${row.notes ? ` · ${row.notes}` : ''}`)}</td>`; return `<tr><td>${index + 1}</td><td>${escapeHtml(prefix)}</td><td>${escapeHtml(firstName)}</td><td>${escapeHtml(lastName)}</td><td>${escapeHtml(row.citizen)}</td><td>${escapeHtml(row.application_level)}</td><td>ม.${state.grade} / ห้อง ${state.room}</td><td>${escapeHtml(formatThaiDate(row.birth_iso))}</td><td>${escapeHtml(row.organization_name)}</td><td>ไร่ขิง</td><td>สามพราน</td><td>นครปฐม</td><td>${escapeHtml(row.temple_affiliation)}</td><td></td><td></td><td>นครปฐม</td><td>${escapeHtml(currentCouncil)}</td>${tail}</tr>`; }).join('');
+  const officialRows = state.rows.map((row, index) => { const [prefix, firstName, lastName] = splitName(row.name); const examNote = row.special_needs ? 'นักเรียนพิเศษ ไม่ต้องสอบ' : row.exam_status === 'not_exam' ? `ไม่สอบ เลขใบประกาศเดิม ${row.previous}` : row.exam_status === 'exam' ? 'สอบ' : ''; const previousMatch = String(row.previous || '').match(/(\d{4}).*?(\d+)$/); const previousYear = row.previous_certificate_year || previousMatch?.[1] || ''; const previousNumber = previousMatch?.[2] || String(row.previous || '').replace(/^.*?\//, ''); const currentCouncil = row.school_council || 'คณะจังหวัดนครปฐม'; const previousCouncil = row.previous_school_council || currentCouncil; const tail = isTri ? `<td>${escapeHtml(`${examNote}${row.notes ? ` · ${row.notes}` : ''}`)}</td>` : `<td>${escapeHtml(previousYear)}</td><td>${escapeHtml(previousNumber)}</td><td>${escapeHtml(previousCouncil)}</td><td>${escapeHtml(`${examNote}${row.notes ? ` · ${row.notes}` : ''}`)}</td>`; return `<tr><td>${index + 1}</td><td>${escapeHtml(prefix)}</td><td>${escapeHtml(firstName)}</td><td>${escapeHtml(lastName)}</td><td>${escapeHtml(row.citizen)}</td><td>${escapeHtml(row.application_level)}</td><td>ม.${state.grade} / ห้อง ${state.room}</td><td>${escapeHtml(formatThaiDate(row.birth_iso))}</td><td>${escapeHtml(row.organization_name)}</td><td>ไร่ขิง</td><td>สามพราน</td><td>นครปฐม</td><td>${escapeHtml(row.temple_affiliation)}</td><td></td><td></td><td>นครปฐม</td><td>${escapeHtml(currentCouncil)}</td>${tail}</tr>`; }).join('');
     const previousTitle = state.level === 'โท' ? 'ประโยคเดิม (ธรรมศึกษาชั้นตรี)' : 'ประโยคเดิม (ธรรมศึกษาชั้นโท)';
     const previousGroup = isTri ? '<th rowspan="2" class="group">หมายเหตุ</th>' : `<th colspan="3" class="group">${previousTitle}</th><th rowspan="2" class="group">หมายเหตุ</th>`;
     const previousSubhead = isTri ? '' : '<th class="subhead">พ.ศ.</th><th class="subhead">เลขที่ ปกศ.</th><th class="subhead">สำนักเรียนวัด/คณะจังหวัด</th>';
@@ -256,18 +300,27 @@
     const saved = JSON.parse(localStorage.getItem(`dharma-direct-form-v3:${student.grade}:${student.room}`) || '{}');
     return { organization_name:'โรงเรียนวัดไร่ขิงวิทยา', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student, ...saved[student.number] };
   };
+  const printStatus = (row) => {
+    const complete = rowComplete(row);
+    const partial = Boolean(normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes);
+    return { complete, partial, label: row.special_needs ? 'พิเศษ' : complete ? 'กรอกแล้ว' : partial ? 'ข้อมูลไม่ครบ' : 'ยังไม่กรอก' };
+  };
+  const buildPrintReport = (rows, title, subtitle) => { const includeRoom = rows.length !== state.rows.length; const locationHead = includeRoom ? '<th>ชั้น / ห้อง</th>' : ''; return `<div class="report-heading"><h1>${esc(title)}</h1><p class="all-print-meta">${esc(subtitle)}</p><div class="report-meta"><span><b>สนามสอบ</b> โรงเรียนวัดไร่ขิงวิทยา</span><span><b>รหัสสนามสอบ</b> 256101</span><span><b>ครูที่ปรึกษา 1</b> ${esc($('#advisor-one').value)}</span><span><b>ครูที่ปรึกษา 2</b> ${esc($('#advisor-two').value)}</span></div></div><table class="report-table"><thead><tr><th>ที่</th>${locationHead}<th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>เลขประชาชน</th><th>วันเดือนปีเกิด (พ.ศ.)</th><th>ระดับสมัคร</th><th>ใบประกาศเดิม</th><th>สอบ / ไม่สอบ</th><th>สถานะ</th></tr></thead><tbody>${rows.map((row, index) => { const status = printStatus(row); const exam = row.special_needs ? 'พิเศษ · ไม่ต้องสอบ' : row.exam_status === 'not_exam' ? 'ไม่สอบ' : row.exam_status === 'exam' ? 'สอบ' : ''; const rowClass = row.special_needs ? 'special' : status.complete ? 'complete' : status.partial ? 'partial' : 'empty'; const location = includeRoom ? `<td>${esc(gradeLabel(row.grade))} / ${esc(roomLabel(row.room))}</td>` : ''; return `<tr class="${rowClass}"><td>${index + 1}</td>${location}<td>${esc(row.number)}</td><td class="report-name">${esc(row.name)}</td><td>${esc(row.citizen || '')}</td><td>${esc(formatThaiDate(row.birth_iso))}</td><td>${esc(row.application_level || '')}</td><td>${esc(row.previous || '')}</td><td>${esc(exam)}</td><td>${status.label}</td></tr>`; }).join('')}</tbody></table><p class="report-footnote">รวม ${rows.length.toLocaleString('th-TH')} คน · สีเขียว = กรอกแล้ว · สีเหลือง = ข้อมูลไม่ครบ · สีเทา = ยังไม่กรอก · สีม่วง = นักเรียนพิเศษ</p>`; };
   const printCurrentRoom = () => {
+    const rows = state.rows.map(printableRow).sort((a, b) => String(a.number).localeCompare(String(b.number), 'th', { numeric:true }));
+    if (!rows.length) { setStatus('ห้องนี้ยังไม่มีรายชื่อสำหรับพิมพ์','#a04b40'); return; }
+    $('#all-print-sheet').innerHTML = buildPrintReport(rows, 'รายงานตรวจข้อมูลสมัครธรรมศึกษา', `${gradeLabel(state.grade)} / ${roomLabel(state.room)} · ปีการศึกษา 2569`);
     pendingPrint = 'room';
     $('#print-preview-title').textContent = `พิมพ์ ${gradeLabel(state.grade)} / ${roomLabel(state.room)}`;
-    $('#print-preview-note').textContent = `จะแสดงเฉพาะนักเรียนใน ${gradeLabel(state.grade)} ${roomLabel(state.room)} พร้อมจัดหน้า A4 แนวนอน`;
-    $('#print-preview-content').innerHTML = $('#print-area').cloneNode(true).outerHTML;
+    $('#print-preview-note').textContent = `รายงานเฉพาะ ${gradeLabel(state.grade)} ${roomLabel(state.room)} จัดหน้า A4 แนวนอน พร้อมพิมพ์`;
+    $('#print-preview-content').innerHTML = $('#all-print-sheet').cloneNode(true).outerHTML;
     $('#print-preview-modal').hidden = false;
   };
   const printAll = () => {
     if (!rosterRows.length) { setStatus('ยังไม่มีรายชื่อสำหรับพิมพ์ทั้งหมด','#a04b40'); return; }
     const rank = (value) => value === 'higher' ? 999 : Number(value);
     const rows = rosterRows.map(printableRow).sort((a, b) => rank(a.grade) - rank(b.grade) || rank(a.room) - rank(b.room) || String(a.number).localeCompare(String(b.number), 'th'));
-    $('#all-print-sheet').innerHTML = `<h1>สรุปตรวจข้อมูลสมัครธรรมศึกษา ปี 2569</h1><p class="all-print-meta">โรงเรียนวัดไร่ขิงวิทยา · จำนวน ${rows.length.toLocaleString('th-TH')} คน</p><table><thead><tr><th>ที่</th><th>ชั้น / ห้อง</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>เลขประชาชน</th><th>วันเดือนปีเกิด (พ.ศ.)</th><th>ระดับสมัคร</th><th>ใบประกาศเดิม</th><th>สถานะ</th></tr></thead><tbody>${rows.map((row, index) => { const complete = rowComplete(row); const partial = Boolean(normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes); const status = row.special_needs ? 'พิเศษ' : complete ? 'กรอกแล้ว' : partial ? 'ข้อมูลไม่ครบ' : 'ยังไม่กรอก'; return `<tr><td>${index + 1}</td><td>${esc(gradeLabel(row.grade))} / ${esc(roomLabel(row.room))}</td><td>${esc(row.number)}</td><td>${esc(row.name)}</td><td>${esc(row.citizen || '')}</td><td>${esc(formatThaiDate(row.birth_iso))}</td><td>${esc(row.application_level || '')}</td><td>${esc(row.previous || '')}</td><td class="${complete ? 'complete' : partial ? 'partial' : 'empty'}">${status}</td></tr>`; }).join('')}</tbody></table>`;
+    $('#all-print-sheet').innerHTML = `<h1>สรุปตรวจข้อมูลสมัครธรรมศึกษา ปี 2569</h1><p class="all-print-meta">โรงเรียนวัดไร่ขิงวิทยา · จำนวน ${rows.length.toLocaleString('th-TH')} คน</p><table><thead><tr><th>ที่</th><th>ชั้น / ห้อง</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>เลขประชาชน</th><th>วันเดือนปีเกิด (พ.ศ.)</th><th>ระดับสมัคร</th><th>ใบประกาศเดิม</th><th>สถานะ</th></tr></thead><tbody>${rows.map((row, index) => { const status = printStatus(row); return `<tr><td>${index + 1}</td><td>${esc(gradeLabel(row.grade))} / ${esc(roomLabel(row.room))}</td><td>${esc(row.number)}</td><td>${esc(row.name)}</td><td>${esc(row.citizen || '')}</td><td>${esc(formatThaiDate(row.birth_iso))}</td><td>${esc(row.application_level || '')}</td><td>${esc(row.previous || '')}</td><td class="${row.special_needs ? 'special' : status.complete ? 'complete' : status.partial ? 'partial' : 'empty'}">${status.label}</td></tr>`; }).join('')}</tbody></table>`;
     pendingPrint = 'all';
     $('#print-preview-title').textContent = 'พิมพ์ข้อมูลทั้งหมด';
     $('#print-preview-note').textContent = `จะแสดงรายชื่อทั้งหมด ${rows.length.toLocaleString('th-TH')} คน แยกตามชั้นและห้อง ในรูปแบบสรุป A4 แนวนอน`;
@@ -288,7 +341,7 @@
   $('#grade-select').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#room-select').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join(''); $('#grade-select').value = state.grade; $('#room-select').value = state.room;
   $('#edit-grade').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#edit-room').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join('');
   $('#grade-select').addEventListener('change', (event) => { state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
-  $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
+  $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-previous-year').addEventListener('input', syncRosterExamOptions); $('#edit-application-level').addEventListener('change', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
   $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });
   $('#font-upload').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (result) => { const style = document.createElement('style'); style.dataset.printFont = 'true'; style.textContent = `@font-face{font-family:UploadedPrintFont;src:url(${result.target.result})}@media print{body,.paper{font-family:UploadedPrintFont,Sarabun,sans-serif}}`; document.head.appendChild(style); setStatus('ใช้ฟอนต์นี้เฉพาะตอนพิมพ์','#167047'); }; reader.readAsDataURL(file); });
   setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData();

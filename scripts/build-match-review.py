@@ -17,11 +17,24 @@ from pathlib import Path
 
 
 THAI_DIGITS = str.maketrans("๐๑๒๓๔๕๖๗๘๙", "0123456789")
+LEVEL_RANK = {"ตรี": 1, "โท": 2, "เอก": 3}
 
 
 def normalize_name(value: object) -> str:
     text = unicodedata.normalize("NFKC", str(value or "")).lower().translate(THAI_DIGITS)
     return re.sub(r"[\s\-_/\.()]+", "", text)
+
+
+def normalize_person_name(value: object) -> str:
+    """Normalize a name while ignoring common Thai honorifics.
+
+    The historical source and the current roster often use different
+    prefixes (for example นาย vs เด็กชาย).  This fallback is only accepted
+    when it produces one legacy candidate, so it cannot silently choose
+    between duplicate names.
+    """
+    text = normalize_name(value)
+    return re.sub(r"^(?:เด็กชาย|เด็กหญิง|นางสาว|นาย|นาง|พระ|สามเณร)", "", text)
 
 
 def display_name(row: dict[str, str]) -> str:
@@ -52,6 +65,9 @@ def load_legacy(path: Path) -> dict[str, list[dict[str, str]]]:
         key = normalize_name(record["full_name"] or record["first_name"] + record["last_name"])
         if key:
             index[key].append(record)
+        person_key = normalize_person_name(record["full_name"] or record["first_name"] + record["last_name"])
+        if person_key and person_key != key:
+            index[f"person:{person_key}"].append(record)
     return index
 
 
@@ -60,20 +76,69 @@ def load_roster(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def normalized_level(value: object) -> str:
+    text = str(value or "").strip()
+    for level in LEVEL_RANK:
+        if level in text:
+            return level
+    return text
+
+
+def certificate_year(candidate: dict[str, str]) -> int:
+    digits = re.sub(r"[^0-9]", "", str(candidate.get("exam_year_be") or ""))
+    return int(digits) if digits else -1
+
+
+def choose_highest_candidates(candidates: list[dict[str, str]]) -> tuple[list[dict[str, str]], str]:
+    """Choose the student's highest completed Dhamma level safely.
+
+    A duplicate name is not automatically ambiguous when the records clearly
+    describe progression: เอก outranks โท, and โท outranks ตรี.  If the top
+    level still has multiple different records from the same/latest year, keep
+    it in review rather than guessing.
+    """
+    if not candidates:
+        return [], "no_exact_normalized_name"
+
+    highest_rank = max(LEVEL_RANK.get(normalized_level(row.get("level")), 0) for row in candidates)
+    top = [row for row in candidates if LEVEL_RANK.get(normalized_level(row.get("level")), 0) == highest_rank]
+    latest_year = max(certificate_year(row) for row in top)
+    if latest_year >= 0:
+        top = [row for row in top if certificate_year(row) == latest_year]
+
+    # Collapse duplicate imports of the same certificate before deciding.
+    unique: dict[tuple[str, str, str], dict[str, str]] = {}
+    for row in top:
+        key = (row.get("firebase_key", ""), row.get("certificate_no", ""), row.get("exam_year_be", ""))
+        unique[key] = row
+    top = list(unique.values())
+    level = normalized_level(top[0].get("level")) if top else ""
+    if len(top) == 1:
+        return top, f"highest_completed_level_{level or 'unknown'}"
+    return top, "highest_level_still_has_multiple_records"
+
+
 def build_matches(roster: list[dict[str, str]], legacy: dict[str, list[dict[str, str]]]) -> list[dict[str, str]]:
     output: list[dict[str, str]] = []
     for student in roster:
         current_name = display_name(student)
-        candidates = legacy.get(normalize_name(current_name), [])
-        if len(candidates) == 1:
-            status, confidence, basis = "auto_matched", "1.0000", "exact_normalized_full_name"
-        elif candidates:
-            status, confidence, basis = "review", "0.7500", "exact_name_multiple_legacy_records"
+        exact_candidates = legacy.get(normalize_name(current_name), [])
+        titleless_candidates = legacy.get(f"person:{normalize_person_name(current_name)}", [])
+        candidates = exact_candidates or titleless_candidates
+        selected, selection_basis = choose_highest_candidates(candidates)
+        if len(selected) == 1 and selection_basis.startswith("highest_completed_level_"):
+            status, confidence, basis = (
+                "auto_matched",
+                "1.0000",
+                selection_basis,
+            )
+        elif selected:
+            status, confidence, basis = "review", "0.7500", selection_basis
         else:
             status, confidence, basis = "unmatched", "0.0000", "no_exact_normalized_name"
         # Keep one output row per candidate so a reviewer can distinguish
         # ambiguous records; unmatched students still get one audit row.
-        rows = candidates or [{}]
+        rows = selected or [{}]
         for candidate in rows:
             output.append({
                 "student_number": str(student.get("student_number") or ""),
