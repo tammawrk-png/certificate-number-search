@@ -71,6 +71,29 @@
   );
   const canSkipExam = (row) => Boolean(row.special_needs || hasPreviousCertificate(row));
   const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
+  const syncActivityRow = async (row) => {
+    if (demoMode || !access.role || !row.application_level) return { saved: true, localOnly: true };
+    const token = access.role === 'admin' ? staffToken : supabaseKey;
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/save_activity_form_row`, {
+      method:'POST', cache:'no-store',
+      headers:{ apikey:supabaseKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+      body:JSON.stringify({
+        requested_year:'2569', requested_role:access.role, requested_access_code:access.code,
+        requested_student_number:row.number, requested_application_level:row.application_level,
+        requested_citizen_id:row.citizen || null, requested_birth_iso:row.birth_iso || null,
+        requested_previous_year:row.previous_certificate_year || null, requested_previous_no:row.previous || null,
+        requested_exam_status:row.exam_status || '', requested_special_needs:Boolean(row.special_needs),
+        requested_organization_name:row.organization_name || null, requested_organization_location:row.organization_location || null,
+        requested_temple_affiliation:row.temple_affiliation || null, requested_school_council:row.school_council || null,
+        requested_notes:row.notes || null,
+      }),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(payload?.message || payload?.error || `Supabase HTTP ${response.status}`);
+    const result = Array.isArray(payload) ? payload[0] : payload;
+    if (!result?.saved) throw new Error(result?.message || 'บันทึกข้อมูลไม่สำเร็จ');
+    return result;
+  };
   const rosterEdits = () => { try { return JSON.parse(localStorage.getItem(rosterOverrideKey) || '{"overrides":{},"extras":[]}'); } catch { return { overrides:{}, extras:[] }; } };
   const studentsForRoom = () => {
     if (!rosterRows.length) return demoMode ? (demoStudents[`${state.grade}:${state.room}`] || []) : [];
@@ -162,7 +185,8 @@
     if (row.special_needs) row.exam_status = 'not_exam';
     if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = '';
     const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved));
-    setStatus(row.citizen && validThaiId(row.citizen) ? 'บันทึกแล้ว · เลขบัตรถูกต้อง' : 'บันทึกแล้ว', validThaiId(row.citizen) ? '#167047' : '#765914'); render();
+    setStatus(demoMode ? 'บันทึกในโหมดทดลองแล้ว' : 'กำลังบันทึกข้อมูลกลาง…', '#765914'); render();
+    void syncActivityRow(row).then(() => setStatus(row.citizen && validThaiId(row.citizen) ? 'บันทึกแล้ว · ซิงก์ข้อมูลกลางแล้ว' : 'บันทึกแล้ว · ซิงก์ข้อมูลกลางแล้ว', '#167047')).catch((error) => setStatus(`บันทึกในเครื่องแล้ว · ซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40'));
   };
   const commitPreviousEdit = (cell) => {
     const button = cell?.querySelector('[data-edit-previous]');
@@ -263,7 +287,7 @@
           payload = adminRows;
         } else {
         const fetchChunk = async (grade, room) => {
-          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_access`, {
+          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_access_v2`, {
             method:'POST', cache:'no-store',
             headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}`, 'Content-Type':'application/json' },
             body:JSON.stringify({ requested_year:'2569', requested_role:access.role, requested_code:access.code, requested_grade:grade, requested_room:room }),
@@ -292,6 +316,11 @@
         legacy_level: String(row.legacy_level || '').replace(/^ธรรมศึกษาชั้น/, ''),
         match_status: row.match_status || '',
         application_level: row.application_level || (Number(row.grade_level ?? row.grade) === 1 || Number(row.grade_level ?? row.grade) === 4 ? 'ตรี' : ''),
+        exam_status: row.exam_status || '', special_needs: Boolean(row.special_needs),
+        organization_name: row.organization_name || 'โรงเรียนวัดไร่ขิงวิทยา',
+        organization_location: row.organization_location || 'ไร่ขิง / สามพราน / นครปฐม',
+        temple_affiliation: row.temple_affiliation || 'วัดไร่ขิงพระอารามหลวง',
+        school_council: row.school_council || 'คณะจังหวัดนครปฐม', notes: row.notes || '',
         advisor_1: row.advisor_1 || '', advisor_2: row.advisor_2 || '',
       }));
       rosterRows.forEach((row) => {
