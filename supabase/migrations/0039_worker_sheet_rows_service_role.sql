@@ -21,7 +21,7 @@ as $$
     case when c.education_band = 'higher_education' then 'อุดมศึกษา' else 'มัธยม' end,
     concat('ม.', c.grade_level, '/', c.room_no), coalesce(a.organization_name, 'โรงเรียนวัดไร่ขิงวิทยา'),
     'ไร่ขิง', 'สามพราน', 'นครปฐม', coalesce(a.temple_affiliation, 'วัดไร่ขิงพระอารามหลวง'),
-    null, null, null, coalesce(a.organization_name, 'โรงเรียนวัดไร่ขิงวิทยา'), '256101', coalesce(a.school_council, 'คณะจังหวัดนครปฐม'),
+    'ไร่ขิง', 'สามพราน', 'นครปฐม', coalesce(a.organization_name, 'โรงเรียนวัดไร่ขิงวิทยา'), '256101', coalesce(a.school_council, 'คณะจังหวัดนครปฐม'),
     coalesce(a.previous_certificate_year, prior.exam_year_be), coalesce(a.previous_certificate_no, prior.certificate_no), coalesce(a.school_council, 'คณะจังหวัดนครปฐม'),
     a.notes, s.student_number
   from academic_years y
