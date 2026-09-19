@@ -43,7 +43,7 @@ def api(base: str, key: str, name: str, method: str = "GET", **kwargs):
 
 
 def rows_for_level(base: str, key: str, year: str, level: str) -> list[dict]:
-    rows = api(base, key, "rpc/mother_sangha_form_rows_v4", "POST", json={"requested_year": year, "requested_level": level})
+    rows = api(base, key, "rpc/mother_sangha_form_rows_worker_v1", "POST", json={"requested_year": year, "requested_level": level})
     if not isinstance(rows, list):
         raise RuntimeError(f"Supabase did not return rows for {level}")
     return rows
