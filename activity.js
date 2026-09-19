@@ -134,7 +134,7 @@
   };
   const closeRosterModal = () => { $('#roster-modal').hidden = true; $('#roster-form-message').textContent = ''; };
   const openRosterModal = (number = '') => {
-    const row = state.rows.find((item) => item.number === number) || { number:'', name:'', grade:state.grade, room:state.room, citizen:'', birth_iso:'', advisor_1:'', advisor_2:'' };
+    const row = state.rows.find((item) => item.number === number) || { number:'', name:'', grade:state.grade, room:state.room, citizen:'', birth_iso:'', application_level:suggestedLevel() || 'ตรี', previous:'', exam_status:'', special_needs:false, advisor_1:'', advisor_2:'' };
     $('#edit-original-number').value = number;
     $('#edit-number').value = row.number || '';
     $('#edit-name').value = row.name || '';
@@ -142,11 +142,31 @@
     $('#edit-room').value = String(row.room || state.room);
     $('#edit-citizen').value = row.citizen || '';
     $('#edit-birth').value = row.birth_iso || '';
+    $('#edit-application-level').value = row.application_level || suggestedLevel() || 'ตรี';
+    $('#edit-previous').value = row.previous || '';
+    $('#edit-exam').checked = row.exam_status === 'exam';
+    $('#edit-no-exam').checked = row.exam_status === 'not_exam';
+    $('#edit-special').checked = Boolean(row.special_needs);
     $('#edit-advisor-one').value = row.advisor_1 || '';
     $('#edit-advisor-two').value = row.advisor_2 || '';
+    syncRosterExamOptions();
     $('#roster-modal-title').textContent = number ? 'แก้ไขข้อมูลนักเรียน' : 'เพิ่มรายชื่อนักเรียน';
     $('#roster-modal').hidden = false;
     $('#edit-name').focus();
+  };
+  const syncRosterExamOptions = () => {
+    const hasPrevious = Boolean($('#edit-previous').value.trim());
+    const special = $('#edit-special').checked;
+    $('#edit-no-exam').disabled = !(hasPrevious || special);
+    $('#edit-no-exam-note').textContent = special ? 'นักเรียนพิเศษจะถูกบันทึกเป็นไม่สอบ' : 'การเลือกไม่สอบต้องมีเลขใบประกาศเดิม';
+    if (special) { $('#edit-no-exam').checked = true; $('#edit-exam').checked = false; }
+    else if (!hasPrevious) $('#edit-no-exam').checked = false;
+  };
+  const syncRosterExamChecks = (source) => {
+    if (source === 'exam' && $('#edit-exam').checked) { $('#edit-no-exam').checked = false; $('#edit-special').checked = false; }
+    if (source === 'no-exam' && $('#edit-no-exam').checked) { $('#edit-exam').checked = false; }
+    if (source === 'special' && $('#edit-special').checked) { $('#edit-exam').checked = false; }
+    syncRosterExamOptions();
   };
   const saveRosterEdit = (event) => {
     event.preventDefault();
@@ -155,10 +175,13 @@
     const name = $('#edit-name').value.trim();
     if (!number || !name) { $('#roster-form-message').textContent = 'กรุณากรอกเลขประจำตัวและชื่อ - สกุล'; return; }
     const edits = rosterEdits();
-    const updated = { number, name, grade:$('#edit-grade').value, room:$('#edit-room').value, citizen:$('#edit-citizen').value.trim(), birth_iso:$('#edit-birth').value, advisor_1:$('#edit-advisor-one').value.trim(), advisor_2:$('#edit-advisor-two').value.trim() };
+    const previous = $('#edit-previous').value.trim();
+    const special_needs = $('#edit-special').checked;
+    const exam_status = special_needs ? 'not_exam' : $('#edit-exam').checked ? 'exam' : $('#edit-no-exam').checked && previous ? 'not_exam' : '';
+    const updated = { number, name, grade:$('#edit-grade').value, room:$('#edit-room').value, citizen:$('#edit-citizen').value.trim(), birth_iso:$('#edit-birth').value, application_level:$('#edit-application-level').value, previous, exam_status, special_needs, advisor_1:$('#edit-advisor-one').value.trim(), advisor_2:$('#edit-advisor-two').value.trim() };
     if (original && rosterRows.some((row) => row.number === original)) edits.overrides[original] = updated;
     else if (original) { const index = (edits.extras || []).findIndex((row) => row.number === original); if (index >= 0) edits.extras[index] = { ...edits.extras[index], ...updated }; else edits.extras.push(updated); }
-    else edits.extras.push({ ...updated, education:updated.grade === 'higher' ? 'อุดมศึกษา' : 'มัธยม', application_level:suggestedLevel(), previous:'', notes:'', special_needs:false, exam_status:'' });
+    else edits.extras.push({ ...updated, education:updated.grade === 'higher' ? 'อุดมศึกษา' : 'มัธยม', notes:'' });
     localStorage.setItem(rosterOverrideKey, JSON.stringify(edits));
     state.grade = updated.grade; state.room = updated.room;
     $('#grade-select').value = state.grade; $('#room-select').value = state.room;
@@ -238,7 +261,7 @@
   $('#grade-select').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#room-select').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join(''); $('#grade-select').value = state.grade; $('#room-select').value = state.room;
   $('#edit-grade').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#edit-room').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join('');
   $('#grade-select').addEventListener('change', (event) => { state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
-  $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal));
+  $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
   $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });
   $('#font-upload').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (result) => { const style = document.createElement('style'); style.dataset.printFont = 'true'; style.textContent = `@font-face{font-family:UploadedPrintFont;src:url(${result.target.result})}@media print{body,.paper{font-family:UploadedPrintFont,Sarabun,sans-serif}}`; document.head.appendChild(style); setStatus('ใช้ฟอนต์นี้เฉพาะตอนพิมพ์','#167047'); }; reader.readAsDataURL(file); });
   setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData();
