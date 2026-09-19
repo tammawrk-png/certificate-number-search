@@ -245,13 +245,20 @@
         payload = (await localResponse.json()).rows || [];
       } else {
         if (access.role === 'admin') {
-          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/staff_activity_roster`, {
-            method:'POST', cache:'no-store',
-            headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' },
-            body:JSON.stringify({ requested_year:'2569' }),
-          });
-          if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
-          payload = await response.json();
+          const adminRows = [];
+          for (let offset = 0; ; offset += 1000) {
+            const response = await fetch(`${supabaseUrl}/rest/v1/rpc/staff_activity_roster`, {
+              method:'POST', cache:'no-store',
+              headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json', Range:`${offset}-${offset + 999}` },
+              body:JSON.stringify({ requested_year:'2569' }),
+            });
+            if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
+            const chunk = await response.json();
+            if (!Array.isArray(chunk) || !chunk.length) break;
+            adminRows.push(...chunk);
+            if (chunk.length < 1000) break;
+          }
+          payload = adminRows;
         } else {
         const fetchChunk = async (grade, room) => {
           const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_access`, {
