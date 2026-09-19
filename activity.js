@@ -220,6 +220,7 @@
     pendingPrint = 'room';
     $('#print-preview-title').textContent = `พิมพ์ ${gradeLabel(state.grade)} / ${roomLabel(state.room)}`;
     $('#print-preview-note').textContent = `จะแสดงเฉพาะนักเรียนใน ${gradeLabel(state.grade)} ${roomLabel(state.room)} พร้อมจัดหน้า A4 แนวนอน`;
+    $('#print-preview-content').innerHTML = $('#print-area').cloneNode(true).outerHTML;
     $('#print-preview-modal').hidden = false;
   };
   const printAll = () => {
@@ -230,32 +231,18 @@
     pendingPrint = 'all';
     $('#print-preview-title').textContent = 'พิมพ์ข้อมูลทั้งหมด';
     $('#print-preview-note').textContent = `จะแสดงรายชื่อทั้งหมด ${rows.length.toLocaleString('th-TH')} คน แยกตามชั้นและห้อง ในรูปแบบสรุป A4 แนวนอน`;
+    $('#print-preview-content').innerHTML = $('#all-print-sheet').cloneNode(true).outerHTML;
     $('#print-preview-modal').hidden = false;
   };
-  const closePrintPreview = () => { $('#print-preview-modal').hidden = true; pendingPrint = ''; };
-  const printInNewWindow = () => {
-    const mode = pendingPrint;
-    const source = mode === 'all' ? $('#all-print-sheet') : $('#print-area');
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-    if (!printWindow) return false;
-    const styles = Array.from(document.styleSheets).map((sheet) => { try { return Array.from(sheet.cssRules).map((rule) => rule.cssText).join('\n'); } catch { return ''; } }).join('\n');
-    const title = mode === 'all' ? 'พิมพ์ข้อมูลทั้งหมด' : `พิมพ์ ${gradeLabel(state.grade)} ${roomLabel(state.room)}`;
-    const bodyClass = mode === 'all' ? 'printing-all' : 'printing-room';
-    printWindow.document.open();
-    printWindow.document.write(`<!doctype html><html lang="th"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>${styles}</style></head><body class="${bodyClass}">${source.cloneNode(true).outerHTML}</body></html>`);
-    printWindow.document.close();
-    window.setTimeout(() => { printWindow.focus(); printWindow.print(); printWindow.addEventListener('afterprint', () => printWindow.close(), { once:true }); }, 500);
-    return true;
-  };
+  const closePrintPreview = () => { $('#print-preview-modal').hidden = true; $('#print-preview-content').innerHTML = ''; pendingPrint = ''; };
   const confirmPrint = () => {
     const mode = pendingPrint;
     $('#print-preview-modal').hidden = true;
+    $('#print-preview-content').innerHTML = '';
     setStatus(mode === 'all' ? 'กำลังเปิดหน้าพิมพ์ข้อมูลทั้งหมด...' : `กำลังเปิดหน้าพิมพ์ ${gradeLabel(state.grade)} ${roomLabel(state.room)}...`, '#167047');
-    if (!printInNewWindow()) {
-      document.body.classList.add(mode === 'all' ? 'printing-all' : 'printing-room');
-      if (typeof window.print === 'function') window.print();
-      else setStatus('เบราว์เซอร์นี้ไม่รองรับการพิมพ์', '#a04b40');
-    }
+    document.body.classList.add(mode === 'all' ? 'printing-all' : 'printing-room');
+    if (typeof window.print === 'function') window.setTimeout(() => window.print(), 80);
+    else setStatus('เบราว์เซอร์นี้ไม่รองรับการพิมพ์', '#a04b40');
   };
   window.addEventListener('afterprint', () => { document.body.classList.remove('printing-room','printing-all'); $('#all-print-sheet').innerHTML = ''; setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047'); });
   $('#grade-select').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#room-select').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join(''); $('#grade-select').value = state.grade; $('#room-select').value = state.room;
