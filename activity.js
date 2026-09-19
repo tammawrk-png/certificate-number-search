@@ -247,10 +247,10 @@
         if (access.role === 'admin') {
           const adminRows = [];
           for (let offset = 0; ; offset += 1000) {
-            const response = await fetch(`${supabaseUrl}/rest/v1/rpc/staff_activity_roster`, {
+            const response = await fetch(`${supabaseUrl}/rest/v1/rpc/staff_activity_roster_page`, {
               method:'POST', cache:'no-store',
-              headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json', Prefer:'count=exact', 'Range-Unit':'items', Range:`${offset}-${offset + 999}` },
-              body:JSON.stringify({ requested_year:'2569' }),
+              headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' },
+              body:JSON.stringify({ requested_year:'2569', _page_offset:offset, _page_limit:1000 }),
             });
             if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
             const chunk = await response.json();
@@ -258,10 +258,7 @@
             const firstKey = String(chunk[0]?.student_id ?? chunk[0]?.student_number ?? '');
             if (offset > 0 && firstKey && adminRows.some((row) => String(row.student_id ?? row.student_number ?? '') === firstKey)) break;
             adminRows.push(...chunk);
-            const contentRange = response.headers.get('content-range') || '';
-            const totalMatch = contentRange.match(/\/([0-9]+|\*)$/);
-            const total = totalMatch && totalMatch[1] !== '*' ? Number(totalMatch[1]) : null;
-            if (chunk.length < 1000 || (total !== null && adminRows.length >= total)) break;
+            if (chunk.length < 1000) break;
           }
           payload = adminRows;
         } else {
