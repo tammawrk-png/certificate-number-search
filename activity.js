@@ -15,7 +15,11 @@
   const storageKey = () => `dharma-direct-form-v3:${state.grade}:${state.room}`;
   const rosterOverrideKey = 'dharma-roster-overrides-2569-v1';
   let rosterRows = [];
-  const demoMode = !(window.APP_CONFIG?.supabase?.publishableKey);
+  const configuredSupabase = window.APP_CONFIG?.supabase || {};
+  const supabaseUrl = (configuredSupabase.url || 'https://jmlcsrmrtghmnpdpfdcf.supabase.co').replace(/\/$/, '');
+  // This is a publishable Supabase key. Never put a service-role key in a public page.
+  const supabaseKey = configuredSupabase.publishableKey || 'sb_publishable_ZyZtx2b_wS6XA-PmN5L5cQ_J6WiYrJG';
+  const demoMode = ['localhost', '127.0.0.1'].includes(location.hostname);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
   const thaiDigits = (value) => String(value ?? '').replace(/[๐-๙]/g, (c) => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(c)));
   const normalizeDigits = (value) => thaiDigits(value).replace(/\D/g, '');
@@ -189,13 +193,39 @@
   };
   const loadRosterData = async () => {
     try {
-      const response = await fetch('data/roster-2569.json', { cache:'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      rosterRows = Array.isArray(payload.rows) ? payload.rows : [];
+      let payload;
+      if (demoMode) {
+        const localResponse = await fetch('data/roster-2569.json', { cache:'no-store' });
+        if (!localResponse.ok) throw new Error(`HTTP ${localResponse.status}`);
+        payload = (await localResponse.json()).rows || [];
+      } else {
+        const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_roster`, {
+          method:'POST', cache:'no-store',
+          headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}`, 'Content-Type':'application/json' },
+          body:JSON.stringify({ requested_year:'2569', requested_grade:null, requested_room:null }),
+        });
+        if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
+        payload = await response.json();
+      }
+      rosterRows = (Array.isArray(payload) ? payload : []).map((row) => ({
+        number: row.student_number,
+        name: row.full_name,
+        grade: String(row.grade_level || 'higher'),
+        room: String(row.room_no || 'higher'),
+        education: row.education_band === 'higher_education' ? 'อุดมศึกษา' : 'มัธยม',
+        citizen: '',
+        birth_iso: '',
+        previous: '',
+        legacy_level: row.legacy_level || '',
+        match_status: row.match_status || '',
+        application_level: row.grade_level === 1 || row.grade_level === 4 ? 'ตรี' : '',
+        advisor_1: row.advisor_1 || '', advisor_2: row.advisor_2 || '',
+      }));
       loadRows(); render(); setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047');
     } catch (error) {
-      setStatus(demoMode ? 'โหมดทดลอง · โหลดรายชื่อจริงไม่สำเร็จ' : 'เชื่อมต่อรายชื่อไม่สำเร็จ', '#a04b40');
+      rosterRows = [];
+      loadRows(); render();
+      setStatus(demoMode ? 'โหมดทดลอง · ใช้รายชื่อจำลอง' : 'เชื่อมต่อรายชื่อจริงไม่สำเร็จ', '#a04b40');
     }
   };
   const exportExcel = () => {
