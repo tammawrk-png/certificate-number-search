@@ -286,6 +286,7 @@
       if (staffRole !== true) throw new Error('STAFF_ROLE_REQUIRED');
       showWorkspace(true);
       setMessage(`เข้าสู่ระบบแล้ว: ${user.email} · ยืนยัน staff role แล้ว`);
+      if (new URLSearchParams(window.location.search).get('return') === 'activity') window.location.assign('activity.html?admin=1');
     } catch (error) {
       console.warn(error); sessionStorage.removeItem('dharma_staff_access_token'); accessToken = ''; showWorkspace(false);
       setMessage(error.message === 'STAFF_ROLE_REQUIRED' ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์เจ้าหน้าที่จาก staff_roles' : 'ยืนยันบัญชี Google ไม่สำเร็จ กรุณาลองใหม่');
