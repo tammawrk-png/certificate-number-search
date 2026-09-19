@@ -23,7 +23,14 @@
         <button type="submit" class="modal-primary">เข้าสู่ระบบ</button>
       </form>
       <p id="access-message" class="access-message" aria-live="polite"></p>
-      <a class="admin-entry" href="staff.html?return=activity">ผู้ดูแลระบบ · เข้าด้วย Google ที่ได้รับสิทธิ์</a>
+      <a class="admin-entry" id="admin-entry" href="activity.html?admin=1">ผู้ดูแลระบบ · เข้าด้วย Google ที่ได้รับสิทธิ์</a>
+      <div id="admin-login-panel" class="admin-login-panel" hidden>
+        <p class="access-kicker">พื้นที่ผู้ดูแลระบบ</p>
+        <h2>ยืนยันสิทธิ์ผู้ดูแล</h2>
+        <p>ใช้บัญชี Google ที่ได้รับสิทธิ์ ระบบจะตรวจสอบกับฐานข้อมูลก่อนเปิดฟังก์ชันเต็ม</p>
+        <button id="admin-google-login" type="button" class="modal-primary">เข้าสู่ระบบด้วย Google</button>
+        <a href="activity.html" class="admin-back-link">กลับหน้าเข้าสำหรับครูและนักเรียน</a>
+      </div>
     </div>
   </section>
   <main id="app-shell" class="form-app" hidden>

@@ -54,7 +54,7 @@ node scripts/supabase-live-smoke.mjs
 
 ให้ผู้ดูแลสร้าง/ยืนยันผู้ใช้ผ่าน Supabase Auth ก่อน แล้วเพิ่มเฉพาะ UUID ของผู้ใช้ที่ได้รับอนุญาตลง `staff_roles` พร้อม role ที่เหมาะสม (`admin`, `coordinator`, `reviewer`, `advisor`) และ `active = true` ห้ามใส่ service-role key ในหน้าเว็บหรือ repository
 
-หลังจากนั้นเปิด Google provider ใน Supabase Auth และตั้ง callback URL เป็น `https://tammawrk-png.github.io/certificate-number-search/staff.html` จากนั้นทดสอบหน้า `staff.html` ด้วยปุ่ม Google: อีเมลที่ไม่ลงท้าย `@wrk.ac.th` ต้องถูกปฏิเสธ และบัญชีองค์กรที่ยังไม่มีแถว active ใน `staff_roles` ต้องไม่เห็นแถวรายงาน
+หลังจากนั้นเปิด Google provider ใน Supabase Auth และตั้ง callback URL เป็น `https://tammawrk-png.github.io/certificate-number-search/activity.html?admin=1` จากนั้นทดสอบหน้า `activity.html?admin=1` ด้วยปุ่ม Google: อีเมลที่ไม่ลงท้าย `@wrk.ac.th` ต้องถูกปฏิเสธ และบัญชีองค์กรที่ยังไม่มีแถว active ใน `staff_roles` ต้องไม่เห็นข้อมูลทะเบียน
 
 ## นำเข้าและจับคู่
 

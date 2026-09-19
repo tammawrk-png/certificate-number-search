@@ -13,6 +13,8 @@
   const state = { grade:'1', room:'1', level:'ตรี', rows:[] };
   const access = { role:'', code:'', studentNumber:'' };
   const adminRequested = new URLSearchParams(location.search).get('admin') === '1';
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  if (hashParams.get('access_token')) { sessionStorage.setItem('dharma_staff_access_token', hashParams.get('access_token')); history.replaceState({}, '', `${location.pathname}?admin=1`); }
   const staffToken = sessionStorage.getItem('dharma_staff_access_token') || '';
   let pendingPrint = '';
   const storageKey = () => `dharma-direct-form-v3:${state.grade}:${state.room}`;
@@ -367,13 +369,24 @@
   document.querySelectorAll('[data-access-role]').forEach((button) => button.addEventListener('click', () => { selectedRole = button.dataset.accessRole; document.querySelectorAll('[data-access-role]').forEach((item) => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); }); $('#access-label').textContent = selectedRole === 'teacher' ? 'รหัสห้องเรียน' : 'เลขประจำตัวนักเรียน'; $('#access-code').placeholder = selectedRole === 'teacher' ? 'กรอกรหัสห้องเรียน' : 'กรอกเลขประจำตัวนักเรียน'; $('#access-code').value = ''; $('#access-message').textContent = ''; }));
   accessForm.addEventListener('submit', (event) => { event.preventDefault(); const code = $('#access-code').value.trim(); if (selectedRole === 'teacher') { const match = code.toLowerCase().match(/^wrk([1-6])(\d{1,2})$/); if (!match || Number(match[2]) < 1 || Number(match[2]) > 15) { $('#access-message').textContent = 'รหัสห้องเรียนไม่ถูกต้อง'; return; } access.role = 'teacher'; access.code = code.toLowerCase(); state.grade = match[1]; state.room = match[2]; $('#grade-select').value = state.grade; $('#room-select').value = state.room; $('#grade-select').disabled = true; $('#room-select').disabled = true; } else { if (!/^\d+$/.test(code)) { $('#access-message').textContent = 'กรุณากรอกเลขประจำตัวนักเรียน'; return; } access.role = 'student'; access.code = code; access.studentNumber = code; $('#grade-select').disabled = true; $('#room-select').disabled = true; } startApp(); });
   const startAdmin = async () => {
-    if (!staffToken) return;
+    document.body.classList.add('admin-mode');
+    if (!staffToken) { $('#access-gate').hidden = false; $('#app-shell').hidden = true; $('#admin-login-panel').hidden = false; return; }
     try {
       const response = await fetch(`${supabaseUrl}/rest/v1/rpc/is_staff`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' }, body:'{}' });
-      if (!response.ok || (await response.json()) !== true) return;
+      const allowed = response.ok && (await response.json()) === true;
+      if (!allowed) {
+        sessionStorage.removeItem('dharma_staff_access_token');
+        $('#admin-login-panel').hidden = false;
+        $('#access-message').textContent = 'บัญชี Google นี้ยังไม่ได้รับสิทธิ์ผู้ดูแลระบบ';
+        return;
+      }
       access.role = 'admin'; access.code = 'admin'; startApp();
-    } catch { $('#access-message').textContent = 'ยืนยันสิทธิ์ผู้ดูแลระบบไม่สำเร็จ'; }
+    } catch { $('#admin-login-panel').hidden = false; $('#access-message').textContent = 'ยืนยันสิทธิ์ผู้ดูแลระบบไม่สำเร็จ'; }
   };
-  if (demoMode) { access.role = 'teacher'; access.code = 'wrk11'; startApp(); }
-  else if (adminRequested) startAdmin();
+  if (adminRequested) startAdmin();
+  else if (demoMode) { access.role = 'teacher'; access.code = 'wrk11'; startApp(); }
+  $('#admin-google-login')?.addEventListener('click', () => {
+    const redirectTo = `${location.origin}${location.pathname}?admin=1`;
+    window.location.assign(`${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`);
+  });
 })();

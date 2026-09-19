@@ -6,7 +6,7 @@
 
 - หน้า `index.html` คงการค้นเลขใบประกาศเดิมและอ่าน Firebase แบบ read-only
 - หน้า `activity.html` เป็นแดชบอร์ดสาธารณะ รับสมัคร และตรวจสอบสถานะประกาศ
-- หน้า `staff.html` เป็นพื้นที่เจ้าหน้าที่สำหรับรายงานและตรวจจับคู่ชื่อซ้ำ
+- หน้า `activity.html?admin=1` เป็นพื้นที่เจ้าหน้าที่หลังยืนยัน Google และตรวจสิทธิ์ `staff_roles`
 - Supabase/PostgreSQL เป็นฐานข้อมูลหลักของ roster, matching, registration, eligibility, seat, result และ audit log
 - Google Sheets ใช้เป็นพื้นที่ staging/review ที่ควบคุมสิทธิ์ ไม่ใช่ฐานข้อมูลหลัก
 - Google Drive เก็บต้นฉบับฟอร์มแม่กองธรรมและรายงานในโฟลเดอร์โครงการที่กำหนด
