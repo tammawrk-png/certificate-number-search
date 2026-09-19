@@ -11,6 +11,7 @@
     '4:2': [{ number:'40001', name:'นาย วิทยา ตั้งใจ', birth_iso:'2009-01-02', education:'มัธยม', previous:'TR-2567-009', citizen:'', application_level:'โท', advisor_1:'ครูตัวอย่าง สาม', advisor_2:'ครูตัวอย่าง สี่' }],
   };
   const state = { grade:'1', room:'1', level:'ตรี', rows:[] };
+  const access = { role:'', code:'', studentNumber:'' };
   let pendingPrint = '';
   const storageKey = () => `dharma-direct-form-v3:${state.grade}:${state.room}`;
   const rosterOverrideKey = 'dharma-roster-overrides-2569-v1';
@@ -68,7 +69,7 @@
   const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
   const rosterEdits = () => { try { return JSON.parse(localStorage.getItem(rosterOverrideKey) || '{"overrides":{},"extras":[]}'); } catch { return { overrides:{}, extras:[] }; } };
   const studentsForRoom = () => {
-    if (!rosterRows.length) return demoStudents[`${state.grade}:${state.room}`] || [];
+    if (!rosterRows.length) return demoMode ? (demoStudents[`${state.grade}:${state.room}`] || []) : [];
     const edits = rosterEdits();
     const base = rosterRows.map((student) => {
       const override = edits.overrides?.[student.number] || {};
@@ -240,21 +241,19 @@
         payload = (await localResponse.json()).rows || [];
       } else {
         const fetchChunk = async (grade, room) => {
-          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_roster`, {
+          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_access`, {
             method:'POST', cache:'no-store',
             headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}`, 'Content-Type':'application/json' },
-            body:JSON.stringify({ requested_year:'2569', requested_grade:grade, requested_room:room }),
+            body:JSON.stringify({ requested_year:'2569', requested_role:access.role, requested_code:access.code, requested_grade:grade, requested_room:room }),
           });
           if (!response.ok) throw new Error(`Supabase HTTP ${response.status} · ม.${grade}/${room}`);
           return response.json();
         };
         // Supabase REST caps a single response at 1,000 rows. Room-scoped reads
         // keep every request small and make the full 2569 roster deterministic.
-        const chunks = await Promise.all(
-          grades.filter((grade) => grade !== 'higher').flatMap((grade) =>
-            rooms.filter((room) => room !== 'higher').map((room) => fetchChunk(Number(grade), Number(room)))
-          )
-        );
+        const chunks = access.role === 'student'
+          ? [await fetchChunk(null, null)]
+          : [await fetchChunk(Number(state.grade), Number(state.room))];
         payload = chunks.flat();
       }
       rosterRows = (Array.isArray(payload) ? payload : []).map((row) => ({
@@ -275,6 +274,12 @@
       rosterRows.forEach((row) => {
         if (row.match_status === 'auto_matched' && row.application_level === row.legacy_level) row.application_level = '';
       });
+      if (access.role === 'student' && rosterRows[0]) {
+        state.grade = String(rosterRows[0].grade);
+        state.room = String(rosterRows[0].room);
+        $('#grade-select').value = state.grade;
+        $('#room-select').value = state.room;
+      }
       loadRows(); render(); setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047');
     } catch (error) {
       rosterRows = [];
@@ -340,9 +345,14 @@
   window.addEventListener('afterprint', () => { document.body.classList.remove('printing-room','printing-all'); $('#all-print-sheet').innerHTML = ''; setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047'); });
   $('#grade-select').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#room-select').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join(''); $('#grade-select').value = state.grade; $('#room-select').value = state.room;
   $('#edit-grade').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#edit-room').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join('');
-  $('#grade-select').addEventListener('change', (event) => { state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
+  const startApp = () => { $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
+  $('#grade-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
   $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-previous-year').addEventListener('input', syncRosterExamOptions); $('#edit-application-level').addEventListener('change', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
   $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });
+  $('#logout-button').addEventListener('click', () => { access.role = ''; access.code = ''; access.studentNumber = ''; location.reload(); });
   $('#font-upload').addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (result) => { const style = document.createElement('style'); style.dataset.printFont = 'true'; style.textContent = `@font-face{font-family:UploadedPrintFont;src:url(${result.target.result})}@media print{body,.paper{font-family:UploadedPrintFont,Sarabun,sans-serif}}`; document.head.appendChild(style); setStatus('ใช้ฟอนต์นี้เฉพาะตอนพิมพ์','#167047'); }; reader.readAsDataURL(file); });
-  setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData();
+  const accessForm = $('#access-form'); let selectedRole = 'teacher';
+  document.querySelectorAll('[data-access-role]').forEach((button) => button.addEventListener('click', () => { selectedRole = button.dataset.accessRole; document.querySelectorAll('[data-access-role]').forEach((item) => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); }); $('#access-label').textContent = selectedRole === 'teacher' ? 'รหัสห้องเรียน' : 'เลขประจำตัวนักเรียน'; $('#access-code').placeholder = selectedRole === 'teacher' ? 'กรอกรหัสห้องเรียน' : 'กรอกเลขประจำตัวนักเรียน'; $('#access-code').value = ''; $('#access-message').textContent = ''; }));
+  accessForm.addEventListener('submit', (event) => { event.preventDefault(); const code = $('#access-code').value.trim(); if (selectedRole === 'teacher') { const match = code.toLowerCase().match(/^wrk([1-6])(\d{1,2})$/); if (!match || Number(match[2]) < 1 || Number(match[2]) > 15) { $('#access-message').textContent = 'รหัสห้องเรียนไม่ถูกต้อง'; return; } access.role = 'teacher'; access.code = code.toLowerCase(); state.grade = match[1]; state.room = match[2]; $('#grade-select').value = state.grade; $('#room-select').value = state.room; $('#grade-select').disabled = true; $('#room-select').disabled = true; } else { if (!/^\d+$/.test(code)) { $('#access-message').textContent = 'กรุณากรอกเลขประจำตัวนักเรียน'; return; } access.role = 'student'; access.code = code; access.studentNumber = code; $('#grade-select').disabled = true; $('#room-select').disabled = true; } startApp(); });
+  if (demoMode) { access.role = 'teacher'; access.code = 'wrk11'; startApp(); }
 })();
