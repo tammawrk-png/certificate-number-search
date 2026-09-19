@@ -199,13 +199,23 @@
         if (!localResponse.ok) throw new Error(`HTTP ${localResponse.status}`);
         payload = (await localResponse.json()).rows || [];
       } else {
-        const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_roster`, {
-          method:'POST', cache:'no-store',
-          headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}`, 'Content-Type':'application/json' },
-          body:JSON.stringify({ requested_year:'2569', requested_grade:null, requested_room:null }),
-        });
-        if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
-        payload = await response.json();
+        const fetchChunk = async (grade, room) => {
+          const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_activity_roster`, {
+            method:'POST', cache:'no-store',
+            headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}`, 'Content-Type':'application/json' },
+            body:JSON.stringify({ requested_year:'2569', requested_grade:grade, requested_room:room }),
+          });
+          if (!response.ok) throw new Error(`Supabase HTTP ${response.status} · ม.${grade}/${room}`);
+          return response.json();
+        };
+        // Supabase REST caps a single response at 1,000 rows. Room-scoped reads
+        // keep every request small and make the full 2569 roster deterministic.
+        const chunks = await Promise.all(
+          grades.filter((grade) => grade !== 'higher').flatMap((grade) =>
+            rooms.filter((room) => room !== 'higher').map((room) => fetchChunk(Number(grade), Number(room)))
+          )
+        );
+        payload = chunks.flat();
       }
       rosterRows = (Array.isArray(payload) ? payload : []).map((row) => ({
         number: row.student_number,
