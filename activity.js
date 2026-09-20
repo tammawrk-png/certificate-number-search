@@ -194,7 +194,7 @@
     });
     document.querySelectorAll('[data-edit-number]').forEach((button) => button.addEventListener('click', () => openRosterModal(button.dataset.editNumber)));
     document.querySelectorAll('[data-edit-previous]').forEach((button) => button.addEventListener('click', () => { const cell = button.closest('.previous-cell'); const inputs = cell?.querySelectorAll('[data-field="previous"], [data-field="previous_certificate_year"]'); if (!inputs?.length) return; button.hidden = true; inputs.forEach((input) => { input.hidden = false; input.addEventListener('blur', () => { setTimeout(() => { if (cell.contains(document.activeElement)) return; const tr = cell.closest('tr[data-number]'); if (tr) updateRow(tr); }, 0); }, { once:false }); }); inputs[0].focus(); }));
-    document.querySelectorAll('[data-open-date]').forEach((button) => button.addEventListener('click', () => { const input = button.parentElement.querySelector('input[type="date"]'); if (input?.showPicker) input.showPicker(); else input?.click(); }));
+    document.querySelectorAll('[data-open-date]').forEach((button) => button.addEventListener('click', () => { const input = button.parentElement.querySelector('input[type="date"]'); if (!input) return; input.focus({ preventScroll:true }); try { if (input.showPicker) { input.showPicker(); return; } } catch {} input.click(); }));
   };
   const syncExamCheckboxes = (tr) => {
     const row = state.rows.find((item) => item.number === tr.dataset.number); if (!row) return;
