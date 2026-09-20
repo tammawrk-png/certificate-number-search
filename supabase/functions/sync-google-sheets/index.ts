@@ -10,6 +10,17 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const googleServiceAccount = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_JSON') ?? '';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+const jsonResponse = (payload: unknown, status = 200) => new Response(JSON.stringify(payload), {
+  status,
+  headers: { ...corsHeaders, 'content-type': 'application/json' },
+});
+
 const base64Url = (value: Uint8Array | string) => {
   const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
   let binary = ''; bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
@@ -67,17 +78,18 @@ const syncSheet = async (token: string, level: string, rows: Record<string, unkn
 };
 
 Deno.serve(async (request) => {
-  if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-  if (!supabaseUrl || !serviceKey || !googleServiceAccount) return Response.json({ error: 'SYNC_SERVER_NOT_CONFIGURED' }, { status: 503 });
+  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (request.method !== 'POST') return jsonResponse({ error: 'METHOD_NOT_ALLOWED' }, 405);
+  if (!supabaseUrl || !serviceKey || !googleServiceAccount) return jsonResponse({ error: 'SYNC_SERVER_NOT_CONFIGURED' }, 503);
   const authorization = request.headers.get('authorization') ?? '';
-  if (!authorization.startsWith('Bearer ')) return Response.json({ error: 'AUTH_REQUIRED' }, { status: 401 });
+  if (!authorization.startsWith('Bearer ')) return jsonResponse({ error: 'AUTH_REQUIRED' }, 401);
   try {
     const allowed = await rpc('is_staff', {}, authorization);
-    if (allowed !== true) return Response.json({ error: 'STAFF_ROLE_REQUIRED' }, { status: 403 });
+    if (allowed !== true) return jsonResponse({ error: 'STAFF_ROLE_REQUIRED' }, 403);
     const body = await request.json().catch(() => ({}));
     const year = String(body.requested_year || '2569');
     const claimed = await rpc('claim_google_sheet_sync', { requested_year: year });
-    if (claimed !== true) return Response.json({ error: 'SYNC_ALREADY_RUNNING' }, { status: 409 });
+    if (claimed !== true) return jsonResponse({ error: 'SYNC_ALREADY_RUNNING' }, 409);
     const token = await googleAccessToken();
     const counts: Record<string, number> = {};
     for (const level of Object.keys(SHEETS)) {
@@ -87,10 +99,10 @@ Deno.serve(async (request) => {
       counts[level] = rows.length;
     }
     await rpc('mark_google_sheet_sync', { requested_year: year, requested_state: 'complete', requested_error: null });
-    return Response.json({ status: 'synced', year, counts });
+    return jsonResponse({ status: 'synced', year, counts });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'SYNC_FAILED';
     try { await rpc('mark_google_sheet_sync', { requested_year: '2569', requested_state: 'failed', requested_error: message.slice(0, 1000) }); } catch { /* preserve original error */ }
-    return Response.json({ error: message }, { status: 500 });
+    return jsonResponse({ error: message }, 500);
   }
 });
