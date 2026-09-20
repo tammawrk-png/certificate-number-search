@@ -13,7 +13,7 @@ as $$
     and s.birth_date is not null
     and cid.citizen_digits ~ '^[0-9]{13}$'
     and cid.citizen_digits !~ '^([0-9])\1{12}$'
-    and ((11 - ((substring(cid.citizen_digits from 1 for 1)::int * 13 + substring(cid.citizen_digits from 2 for 1)::int * 12 + substring(cid.citizen_digits from 3 for 1)::int * 11 + substring(cid.citizen_digits from 4 for 1)::int * 10 + substring(cid.citizen_digits from 5 for 1)::int * 9 + substring(cid.citizen_digits from 6 for 1)::int * 8 + substring(cid.citizen_digits from 7 for 1)::int * 7 + substring(cid.citizen_digits from 8 for 1)::int * 6 + substring(cid.citizen_digits from 9 for 1)::int * 5 + substring(cid.citizen_digits from 10 for 1)::int * 4 + substring(cid.citizen_digits from 11 for 1)::int * 3 + substring(cid.citizen_digits from 12 for 1)::int * 2) % 11)) % 10) = substring(cid.citizen_digits from 13 for 1)::int)
+    and mod(11 - mod((substring(cid.citizen_digits from 1 for 1)::int * 13 + substring(cid.citizen_digits from 2 for 1)::int * 12 + substring(cid.citizen_digits from 3 for 1)::int * 11 + substring(cid.citizen_digits from 4 for 1)::int * 10 + substring(cid.citizen_digits from 5 for 1)::int * 9 + substring(cid.citizen_digits from 6 for 1)::int * 8 + substring(cid.citizen_digits from 7 for 1)::int * 7 + substring(cid.citizen_digits from 8 for 1)::int * 6 + substring(cid.citizen_digits from 9 for 1)::int * 5 + substring(cid.citizen_digits from 10 for 1)::int * 4 + substring(cid.citizen_digits from 11 for 1)::int * 3 + substring(cid.citizen_digits from 12 for 1)::int * 2), 11), 10) = substring(cid.citizen_digits from 13 for 1)::int
   order by s.student_number;
 $$;
 revoke all on function public.mother_sangha_form_rows_worker_v1(text, text) from public;
