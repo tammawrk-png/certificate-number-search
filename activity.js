@@ -91,7 +91,7 @@
   const syncActivityRow = async (row) => {
     if (demoMode || !access.role || !row.application_level) return { saved: true, localOnly: true };
     const token = access.role === 'admin' ? staffToken : supabaseKey;
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/save_activity_form_row`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/save_activity_form_row_v2`, {
       method:'POST', cache:'no-store',
       headers:{ apikey:supabaseKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
       body:JSON.stringify({
@@ -128,7 +128,9 @@
     return base.concat((edits.extras || []).filter((student) => String(student.grade) === state.grade && String(student.room) === state.room));
   };
   const loadRows = () => {
-    const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}');
+    // Live Supabase data is authoritative. Device-local drafts must not
+    // overwrite a newer value saved from another device.
+    const saved = demoMode ? JSON.parse(localStorage.getItem(storageKey()) || '{}') : {};
     state.rows = studentsForRoom().map((student) => ({
       organization_name:'โรงเรียนวัดไร่ขิงวิทยา', organization_location:'ไร่ขิง / สามพราน / นครปฐม', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student,
       ...saved[student.number],
