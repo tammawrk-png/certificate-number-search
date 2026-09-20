@@ -167,7 +167,7 @@
       const name = document.createElement('span'); name.className = 'student-name-text'; name.textContent = button.textContent; name.title = button.title; button.replaceWith(name);
     });
     document.querySelectorAll('#student-body .level-review-trigger').forEach((button) => {
-      const link = document.createElement('a'); link.className = 'level-review-trigger'; link.href = new URL('../index.html#search', document.baseURI).href; link.textContent = 'ค้นใบประกาศเดิมก่อนเลือก'; link.title = 'เปิดหน้าค้นใบประกาศเดิม'; button.replaceWith(link);
+      const link = document.createElement('a'); link.className = 'level-review-trigger'; link.href = new URL('../index.html#search', location.href).href; link.textContent = 'ค้นใบประกาศเดิมก่อนเลือก'; link.title = 'เปิดหน้าค้นใบประกาศเดิม'; button.replaceWith(link);
     });
     const complete = students.filter(rowComplete).length;
     document.querySelectorAll('#student-body [data-field="citizen"]').forEach((input) => { input.placeholder = 'เลขบัตรประชาชน'; });
