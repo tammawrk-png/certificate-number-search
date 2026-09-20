@@ -1,5 +1,13 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const installLoginBranding = () => {
+    const assets = window.SCHOOL_ASSETS || {};
+    [['#login-dharma-logo', assets.dharmaLogo], ['#login-school-logo', assets.schoolLogo]].forEach(([selector, source]) => {
+      const image = $(selector);
+      if (image && source) image.src = source;
+    });
+  };
+  installLoginBranding();
   const levelCode = { ตรี:'tri', โท:'tho', เอก:'ek' };
   const grades = ['1','2','3','4','5','6','higher'];
   const rooms = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','higher'];
@@ -70,6 +78,14 @@
       && (!requiresPreviousYear(row) || /^25\d{2}$/.test(String(row.previous_certificate_year || '').trim()))
   );
   const canSkipExam = (row) => Boolean(row.special_needs || hasPreviousCertificate(row));
+  // Supabase keeps every edit for correction, but reporting Sheets only
+  // receive rows that are ready to submit for an exam.
+  const readyForSheet = (row) => Boolean(validThaiId(row.citizen) && row.birth_iso && row.application_level && row.exam_status === 'exam');
+  const rowSaveMessage = (row) => readyForSheet(row)
+    ? 'บันทึกแล้ว · พร้อมซิงก์ไปชีท'
+    : row.exam_status === 'exam'
+      ? 'บันทึกแล้ว · รอข้อมูลให้ครบก่อนซิงก์ชีท'
+      : 'บันทึกแล้ว · ไม่ส่งเข้าชีท';
   const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
   const syncActivityRow = async (row) => {
     if (demoMode || !access.role || !row.application_level) return { saved: true, localOnly: true };
@@ -151,7 +167,7 @@
       const name = document.createElement('span'); name.className = 'student-name-text'; name.textContent = button.textContent; name.title = button.title; button.replaceWith(name);
     });
     document.querySelectorAll('#student-body .level-review-trigger').forEach((button) => {
-      const link = document.createElement('a'); link.className = 'level-review-trigger'; link.href = 'index.html#search'; link.textContent = 'ค้นใบประกาศเดิมก่อนเลือก'; link.title = 'เปิดหน้าค้นใบประกาศเดิม'; link.target = '_blank'; link.rel = 'noopener'; button.replaceWith(link);
+      const link = document.createElement('a'); link.className = 'level-review-trigger'; link.href = new URL('../index.html#search', document.baseURI).href; link.textContent = 'ค้นใบประกาศเดิมก่อนเลือก'; link.title = 'เปิดหน้าค้นใบประกาศเดิม'; button.replaceWith(link);
     });
     const complete = students.filter(rowComplete).length;
     document.querySelectorAll('#student-body [data-field="citizen"]').forEach((input) => { input.placeholder = 'เลขบัตรประชาชน'; });
@@ -196,7 +212,7 @@
     if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = '';
     const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved));
     setStatus(demoMode ? 'บันทึกในโหมดทดลองแล้ว' : 'กำลังบันทึกข้อมูลกลาง…', '#765914'); render();
-    void syncActivityRow(row).then(() => setStatus(row.citizen && validThaiId(row.citizen) ? 'บันทึกแล้ว · ซิงก์ข้อมูลกลางแล้ว' : 'บันทึกแล้ว · ซิงก์ข้อมูลกลางแล้ว', '#167047')).catch((error) => setStatus(`บันทึกในเครื่องแล้ว · ซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40'));
+    void syncActivityRow(row).then(() => setStatus(rowSaveMessage(row), readyForSheet(row) ? '#167047' : '#765914')).catch((error) => setStatus(`บันทึกในเครื่องแล้ว · ซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40'));
   };
   const commitPreviousEdit = (cell) => {
     const button = cell?.querySelector('[data-edit-previous]');
