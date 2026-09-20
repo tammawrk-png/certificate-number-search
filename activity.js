@@ -462,17 +462,20 @@
     [printButton, printAllButton, syncButton].filter(Boolean).forEach((element) => actions.appendChild(element));
     const tools = document.createElement('div'); tools.className = 'toolbar-tools';
     [fontButton, saveStatus, logoutButton].filter(Boolean).forEach((element) => tools.appendChild(element));
-    const search = document.createElement('a');
-    search.className = 'search-link'; search.href = 'index.html'; search.title = 'ค้นหาและตรวจสอบใบประกาศ';
-    const logo = document.createElement('img'); logo.alt = ''; logo.src = window.SCHOOL_ASSETS?.dharmaLogo || '';
-    search.append(logo, document.createTextNode('ค้นใบประกาศ'));
+    const backLink = document.querySelector('.back-link');
+    if (backLink && !backLink.querySelector('img')) {
+      backLink.textContent = '';
+      const logo = document.createElement('img'); logo.alt = ''; logo.src = window.SCHOOL_ASSETS?.dharmaLogo || '';
+      const label = document.createElement('span'); label.textContent = 'ค้นใบประกาศ';
+      backLink.append(logo, label);
+    }
     if (templates) {
       const labels = [['.tri', 'ศ.5 ตรี'], ['.tho', 'ศ.6 โท'], ['.ek', 'ศ.6 เอก'], ['.template-reference', 'ข้อมูลเดิม']];
       labels.forEach(([selector, label]) => { const link = templates.querySelector(selector); if (link) link.textContent = label; });
       templates.classList.add('toolbar-templates');
       const heading = templates.querySelector('span'); if (heading) heading.textContent = 'แบบส่งข้อมูล';
     }
-    header.replaceChildren(brand, actions, templates, tools, search);
+    header.replaceChildren(brand, actions, templates, tools);
   };
   const startApp = () => { $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); installAdminSyncControl(); organizeControlBar(); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
   $('#grade-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
