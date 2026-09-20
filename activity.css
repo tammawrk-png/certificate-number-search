@@ -26,6 +26,7 @@
 .logout-button{display:none;border:1px solid #c4ddd3;border-radius:7px;background:#edf6f1;color:#124e40;padding:7px 10px;font:inherit;font-weight:700;cursor:pointer}.activity-access .logout-button{display:inline-block}.logout-button:hover,.logout-button:focus{background:#fff}
 .teacher-access #print-all-button{display:none}.student-access #roster-editor-button{display:none}
 .admin-login-panel{display:grid;gap:9px;margin-top:18px;padding-top:18px;border-top:1px solid #d7e5de}.admin-login-panel[hidden]{display:none!important}.admin-login-panel h2{margin:0;color:#124e40;font-size:1.15rem}.admin-login-panel p{margin:0;color:#60746b;font-size:.82rem;line-height:1.6}.admin-back-link{color:#47665a;text-align:center;font-size:.78rem}
+.access-footer-note{margin-top:18px;padding-top:12px;border-top:1px solid #d7e5de;color:#6b7d75;font-size:.72rem;line-height:1.55;text-align:center}.access-footer-note p{margin:3px 0}.access-footer-note p:last-child{color:#80918a;font-size:.68rem}
 .admin-mode .access-tabs,.admin-mode #access-form,.admin-mode .admin-entry{display:none}.admin-mode .access-card{max-width:440px}
 
 /* Mobile roster view: keep the desktop table and print layout unchanged, but
