@@ -25,3 +25,70 @@
 .teacher-access #print-all-button{display:none}.student-access #roster-editor-button{display:none}
 .admin-login-panel{display:grid;gap:9px;margin-top:18px;padding-top:18px;border-top:1px solid #d7e5de}.admin-login-panel[hidden]{display:none!important}.admin-login-panel h2{margin:0;color:#124e40;font-size:1.15rem}.admin-login-panel p{margin:0;color:#60746b;font-size:.82rem;line-height:1.6}.admin-back-link{color:#47665a;text-align:center;font-size:.78rem}
 .admin-mode .access-tabs,.admin-mode #access-form,.admin-mode .admin-entry{display:none}.admin-mode .access-card{max-width:440px}
+
+/* Mobile roster view: keep the desktop table and print layout unchanged, but
+   turn each student row into a readable card instead of a horizontal sheet. */
+@media screen and (max-width:760px){
+  .control-bar{position:sticky;top:0;padding:8px 10px;gap:7px}
+  .brand{width:auto;flex:1;min-width:0;margin-right:0}
+  .brand strong{display:block;max-width:14rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .level-buttons{width:100%;order:4;overflow-x:auto;padding-bottom:1px}
+  .level-button{flex:1;min-width:5.5rem;white-space:nowrap}
+  .action-button,.font-button{min-height:38px;padding:7px 9px}
+  .save-status{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .room-bar{position:sticky;top:57px;z-index:9;display:grid;grid-template-columns:1fr 1fr;align-items:end;padding:9px 10px;gap:7px}
+  .room-bar label{min-width:0;font-size:.78rem}
+  .room-bar select{width:100%;min-width:0;min-height:38px}
+  .filled-count,.sync-note{grid-column:1/-1;font-size:.76rem}
+  .back-link{grid-column:1/-1;margin-left:0;font-size:.8rem}
+  .paper{padding:12px 9px 20px}
+  .paper-header h1{font-size:1.2rem}
+  .source-fields{grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+  .source-fields label{font-size:.7rem}
+  .table-caption{margin:8px 0}
+  .table-scroll{overflow:visible;border:0}
+  .table-scroll table{display:block;min-width:0;width:100%;border:0}
+  .table-scroll thead{display:none}
+  .table-scroll tbody{display:block}
+  .table-scroll tr.student-row{display:block;margin:9px 0;padding:7px 8px;border:1px solid #c8d9d1;border-left:4px solid #8ca49b;border-radius:10px;box-shadow:0 2px 8px #173e3210}
+  .table-scroll tr.student-row[data-application-level="tri"]{border-left-color:#4d9b74}
+  .table-scroll tr.student-row[data-application-level="tho"]{border-left-color:#d49b3c}
+  .table-scroll tr.student-row[data-application-level="ek"]{border-left-color:#8b75bd}
+  .table-scroll tr.student-row td{display:grid;grid-template-columns:7.1rem minmax(0,1fr);align-items:center;gap:7px;width:auto!important;min-width:0!important;padding:7px 2px;border:0;border-bottom:1px solid #e6efeb;height:auto;min-height:38px;text-align:left!important;white-space:normal!important;overflow:visible!important}
+  .table-scroll tr.student-row td:last-child{border-bottom:0}
+  .table-scroll tr.student-row td:nth-child(1){display:none}
+  .table-scroll tr.student-row td:nth-child(2)::before{content:'เลขประจำตัว';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(3)::before{content:'ชื่อ - สกุล';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(4)::before{content:'เลขประชาชน';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(5)::before{content:'วันเกิด (พ.ศ.)';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(6)::before{content:'ระดับการศึกษา';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(7)::before{content:'ระดับที่จะสมัคร';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(8)::before{content:'ใบประกาศเดิม';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(9)::before{content:'สอบหรือไม่สอบ';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(15)::before{content:'สถานะ';color:#668078;font-size:.72rem;font-weight:700}
+  .table-scroll tr.student-row td:nth-child(3) .student-name-button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+  .table-scroll tr.student-row td:nth-child(4) .citizen-cell,.table-scroll tr.student-row td:nth-child(5) .birth-cell,.table-scroll tr.student-row td:nth-child(7) .level-cell,.table-scroll tr.student-row td:nth-child(8) .previous-cell,.table-scroll tr.student-row td:nth-child(9) .exam-choice{min-width:0;width:100%}
+  .table-scroll tr.student-row td:nth-child(4) .field-shell{width:100%}
+  .table-scroll tr.student-row td:nth-child(4) .citizen-input{width:100%;min-width:0;font-size:.88rem}
+  .table-scroll tr.student-row td:nth-child(5) .birth-cell{justify-content:flex-start}
+  .table-scroll tr.student-row td:nth-child(7) .level-cell{justify-content:flex-start}
+  .table-scroll tr.student-row td:nth-child(9) .exam-choice{justify-content:flex-start;flex-wrap:wrap;gap:6px}
+  .table-scroll tr.student-row td:nth-child(9) .exam-choice label{font-size:.73rem}
+  .table-scroll tr.student-row td.detail-column{display:none!important}
+  .table-scroll tr.empty-room{display:block;padding:28px 10px}
+  .status-summary{margin:7px 0;font-size:.72rem}
+  .status-summary span{padding:4px 7px}
+  .roster-modal-card{width:100%;max-height:calc(100dvh - 16px);padding:18px 14px 14px;border-radius:14px}
+  .roster-modal-card h2{font-size:1.08rem}
+  .roster-modal form{gap:9px}
+  .modal-actions{position:sticky;bottom:0;padding-top:8px;background:#fff}
+}
+
+@media screen and (max-width:420px){
+  .control-bar{align-items:stretch}
+  .brand{flex-basis:100%}
+  .level-buttons{order:5}
+  .action-button,.font-button{flex:1}
+  .table-scroll tr.student-row td{grid-template-columns:6.4rem minmax(0,1fr);gap:5px}
+  .table-scroll tr.student-row td::before{font-size:.68rem!important}
+}
