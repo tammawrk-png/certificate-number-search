@@ -234,7 +234,12 @@
   const splitEditableName = (value) => {
     const parts = String(value || '').trim().split(/\s+/).filter(Boolean);
     const titles = new Set(['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง','พระ','สามเณร']);
-    const title = titles.has(parts[0]) ? parts.shift() : '';
+    let title = '';
+    if (titles.has(parts[0])) title = parts.shift();
+    else {
+      const attachedTitle = [...titles].sort((a, b) => b.length - a.length).find((candidate) => parts[0]?.startsWith(candidate) && parts[0].length > candidate.length);
+      if (attachedTitle) { title = attachedTitle; parts[0] = parts[0].slice(attachedTitle.length); }
+    }
     return { title, first: parts.shift() || '', last: parts.join(' ') };
   };
   const openNameEditModal = (number) => {
