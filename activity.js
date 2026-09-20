@@ -147,6 +147,12 @@
         <td><span class="status-chip ${complete ? 'complete' : partial ? 'partial' : 'empty'}">${row.special_needs ? 'พิเศษ' : complete ? 'กรอกแล้ว' : partial ? 'ข้อมูลไม่ครบ' : 'ยังไม่กรอก'}</span></td>
       </tr>`;
     }).join('') : '<tr><td colspan="15" class="empty-room">ชั้นและห้องนี้ยังไม่มีรายชื่อนักเรียน</td></tr>';
+    document.querySelectorAll('#student-body .student-name-button').forEach((button) => {
+      const name = document.createElement('span'); name.className = 'student-name-text'; name.textContent = button.textContent; name.title = button.title; button.replaceWith(name);
+    });
+    document.querySelectorAll('#student-body .level-review-trigger').forEach((button) => {
+      const link = document.createElement('a'); link.className = 'level-review-trigger'; link.href = 'index.html#search'; link.textContent = 'ค้นใบประกาศเดิมก่อนเลือก'; link.title = 'เปิดหน้าค้นใบประกาศเดิม'; link.target = '_blank'; link.rel = 'noopener'; button.replaceWith(link);
+    });
     const complete = students.filter(rowComplete).length;
     document.querySelectorAll('#student-body [data-field="citizen"]').forEach((input) => { input.placeholder = 'เลขบัตรประชาชน'; });
     document.querySelectorAll('#student-body .special-option').forEach((label) => { if (label.lastChild?.nodeType === Node.TEXT_NODE) label.lastChild.textContent = ' นักเรียนพิเศษ'; });
@@ -417,11 +423,11 @@
     button.disabled = true;
     setStatus('กำลังส่งคำขอซิงก์…', '#765914');
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/request_google_sheet_sync`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' }, body:JSON.stringify({ requested_year:'2569' }), cache:'no-store' });
+      const response = await fetch(`${supabaseUrl}/functions/v1/sync-google-sheets`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' }, body:JSON.stringify({ requested_year:'2569' }), cache:'no-store' });
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message || payload?.error || `Supabase HTTP ${response.status}`);
-      setStatus('ส่งคำขอแล้ว · รอ worker ซิงก์', '#765914');
-      window.setTimeout(() => { void syncStatus().catch(() => {}); }, 1500);
+      setStatus(`ซิงก์ชีทสำเร็จ · ตรี ${payload?.counts?.['ตรี'] ?? 0} · โท ${payload?.counts?.['โท'] ?? 0} · เอก ${payload?.counts?.['เอก'] ?? 0}`, '#167047');
+      window.setTimeout(() => { void syncStatus().catch(() => {}); }, 500);
     } catch (error) {
       setStatus(`ขอซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40');
     } finally {
@@ -440,7 +446,35 @@
     header.insertBefore(button, header.querySelector('.template-links'));
     void syncStatus().catch(() => {});
   };
-  const startApp = () => { $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); installAdminSyncControl(); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
+  const organizeControlBar = () => {
+    const header = document.querySelector('.control-bar');
+    if (!header || header.dataset.organized === 'true') return;
+    header.dataset.organized = 'true';
+    const brand = header.querySelector('.brand');
+    const templates = header.querySelector('.template-links');
+    const printButton = $('#print-button');
+    const printAllButton = $('#print-all-button');
+    const syncButton = $('#sync-now-button');
+    const fontButton = header.querySelector('.font-button');
+    const saveStatus = $('#save-status');
+    const logoutButton = $('#logout-button');
+    const actions = document.createElement('div'); actions.className = 'toolbar-actions';
+    [printButton, printAllButton, syncButton].filter(Boolean).forEach((element) => actions.appendChild(element));
+    const tools = document.createElement('div'); tools.className = 'toolbar-tools';
+    [fontButton, saveStatus, logoutButton].filter(Boolean).forEach((element) => tools.appendChild(element));
+    const search = document.createElement('a');
+    search.className = 'search-link'; search.href = 'index.html'; search.title = 'ค้นหาและตรวจสอบใบประกาศ';
+    const logo = document.createElement('img'); logo.alt = ''; logo.src = window.SCHOOL_ASSETS?.dharmaLogo || '';
+    search.append(logo, document.createTextNode('ค้นใบประกาศ'));
+    if (templates) {
+      const labels = [['.tri', 'ศ.5 ตรี'], ['.tho', 'ศ.6 โท'], ['.ek', 'ศ.6 เอก'], ['.template-reference', 'ข้อมูลเดิม']];
+      labels.forEach(([selector, label]) => { const link = templates.querySelector(selector); if (link) link.textContent = label; });
+      templates.classList.add('toolbar-templates');
+      const heading = templates.querySelector('span'); if (heading) heading.textContent = 'แบบส่งข้อมูล';
+    }
+    header.replaceChildren(brand, actions, templates, tools, search);
+  };
+  const startApp = () => { $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); installAdminSyncControl(); organizeControlBar(); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
   $('#grade-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
   $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-previous-year').addEventListener('input', syncRosterExamOptions); $('#edit-application-level').addEventListener('change', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
   $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });

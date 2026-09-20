@@ -108,6 +108,11 @@ def set_queue(base: str, key: str, year: str, state: str, error: str | None = No
     })
 
 
+def claim_queue(base: str, key: str, year: str) -> bool:
+    result = api(base, key, "rpc/claim_google_sheet_sync", "POST", json={"requested_year": year})
+    return result is True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--year", default="2569")
@@ -116,6 +121,9 @@ def main() -> int:
     key = required("SUPABASE_SERVICE_ROLE_KEY")
     sheets = drive_sheets()
     try:
+        if not claim_queue(base, key, args.year):
+            print(json.dumps({"status": "already_running", "year": args.year}, ensure_ascii=False))
+            return 0
         all_counts = {}
         for level in SHEETS:
             rows = rows_for_level(base, key, args.year, level)

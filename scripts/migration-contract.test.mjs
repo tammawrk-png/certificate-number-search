@@ -6,10 +6,10 @@ import { join } from 'node:path';
 const root = new URL('../supabase/migrations/', import.meta.url);
 const rootPath = fileURLToPath(root);
 const names = (await readdir(rootPath)).filter((name) => name.endsWith('.sql')).sort();
-const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028', '0029', '0030', '0031', '0032', '0033', '0034', '0035', '0036', '0037', '0038', '0039', '0040'];
+const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028', '0029', '0030', '0031', '0032', '0033', '0034', '0035', '0036', '0037', '0038', '0039', '0040', '0041'];
 assert.deepEqual(names.map((name) => name.slice(0, 4)), expected);
 
-const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28, m29, m31, m32, m33, m34, m35, m36, m37, m40] = await Promise.all([
+const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28, m29, m31, m32, m33, m34, m35, m36, m37, m40, m41] = await Promise.all([
   readFile(join(rootPath, '0011_refresh_certificate_matches.sql'), 'utf8'),
   readFile(join(rootPath, '0012_student_progress_guidance.sql'), 'utf8'),
   readFile(join(rootPath, '0015_staff_report_rows.sql'), 'utf8'),
@@ -34,6 +34,7 @@ const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28
   readFile(join(rootPath, '0036_staff_activity_roster.sql'), 'utf8'),
   readFile(join(rootPath, '0037_staff_activity_roster_paging.sql'), 'utf8'),
   readFile(join(rootPath, '0040_google_sheet_sync_request_status.sql'), 'utf8'),
+  readFile(join(rootPath, '0041_claim_google_sheet_sync.sql'), 'utf8'),
 ]);
 assert.doesNotMatch(m11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
 assert.match(m12, /staff_roles/);
@@ -112,5 +113,7 @@ assert.match(m37, /grant execute on function public\.staff_activity_roster_page.
 assert.match(m40, /request_google_sheet_sync/);
 assert.match(m40, /google_sheet_sync_status/);
 assert.doesNotMatch(m40, /to anon/i);
+assert.match(m41, /claim_google_sheet_sync/);
+assert.match(m41, /auth\.role\(\) <> 'service_role'/);
 
 console.log('migration contract test passed');
