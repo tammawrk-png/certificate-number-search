@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="styles.css?v=20260814-visual13" />
   </head>
   <body>
-    <script>document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('a[href="activity.html"]').forEach(a=>{a.href='dharma/?v=20260920-06';}));</script>
+    <script>document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('a[href="activity.html"]').forEach(a=>{const admin=sessionStorage.getItem('dharma_staff_access_token');a.href=admin?'dharma/?admin=1&v=20260920-06':'dharma/?v=20260920-06';}));</script>
     <main class="page-shell">
       <section class="hero-panel"><div class="logo-pair"><img id="dharma-logo" class="dharma-logo" alt="Dharma studies logo" /><img id="school-logo" class="school-logo" alt="School logo" /></div><div class="hero-copy"><p class="eyebrow" id="eyebrow"></p><h1 id="page-title"></h1><p class="hero-description" id="hero-description"></p><a class="activity-link" href="activity.html">เข้าสู่ระบบกิจกรรมธรรมศึกษา <span aria-hidden="true">→</span></a></div><div class="hero-orb hero-orb-one"></div><div class="hero-orb hero-orb-two"></div></section>
       <section class="search-panel" aria-labelledby="search-title"><div class="section-heading"><div><p class="section-kicker" id="search-kicker"></p><h2 id="search-title"></h2></div><span class="live-pill"><span class="live-dot"></span><span id="live-label"></span></span></div><form id="search-form" class="search-form"><label class="sr-only" for="search-input" id="search-label"></label><div class="search-box"><span class="search-icon" aria-hidden="true">&#x2315;</span><input id="search-input" name="query" type="search" autocomplete="off" /><button id="clear-button" class="clear-button" type="button" hidden>&#xD7;</button></div><button class="primary-button" type="submit"><span id="search-button"></span><span aria-hidden="true">&#x2192;</span></button></form><div class="search-hints" id="search-hints"></div></section>
@@ -32,4 +32,3 @@
     <script src="app.js?v=20260814-analytics9"></script>
   </body>
 </html>
-
