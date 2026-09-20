@@ -114,7 +114,7 @@
   const rosterEdits = () => { try { return JSON.parse(localStorage.getItem(rosterOverrideKey) || '{"overrides":{},"extras":[]}'); } catch { return { overrides:{}, extras:[] }; } };
   const studentsForRoom = () => {
     if (!rosterRows.length) return demoMode ? (demoStudents[`${state.grade}:${state.room}`] || []) : [];
-    const edits = rosterEdits();
+    const edits = demoMode ? rosterEdits() : { overrides:{}, extras:[] };
     const base = rosterRows.map((student) => {
       const override = edits.overrides?.[student.number] || {};
       return {
@@ -268,26 +268,38 @@
     if (source === 'special' && $('#edit-special').checked) { $('#edit-exam').checked = false; }
     syncRosterExamOptions();
   };
-  const saveRosterEdit = (event) => {
+  const saveRosterEdit = async (event) => {
     event.preventDefault();
+    if (access.role !== 'admin' || demoMode || !staffToken) { $('#roster-form-message').textContent = 'เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ทะเบียนรายชื่อได้'; return; }
     const original = $('#edit-original-number').value.trim();
     const number = $('#edit-number').value.trim();
     const name = $('#edit-name').value.trim();
     if (!number || !name) { $('#roster-form-message').textContent = 'กรุณากรอกเลขประจำตัวและชื่อ - สกุล'; return; }
-    const edits = rosterEdits();
     const previous = $('#edit-previous').value.trim();
     const previous_certificate_year = $('#edit-previous-year').value.trim();
     const special_needs = $('#edit-special').checked;
     const validPrevious = previous && (!requiresPreviousYear($('#edit-application-level').value) || /^25\d{2}$/.test(previous_certificate_year));
     const exam_status = special_needs ? 'not_exam' : $('#edit-exam').checked ? 'exam' : $('#edit-no-exam').checked && validPrevious ? 'not_exam' : '';
     const updated = { number, name, grade:$('#edit-grade').value, room:$('#edit-room').value, citizen:$('#edit-citizen').value.trim(), birth_iso:$('#edit-birth').value, application_level:$('#edit-application-level').value, previous, previous_certificate_year, exam_status, special_needs, advisor_1:$('#edit-advisor-one').value.trim(), advisor_2:$('#edit-advisor-two').value.trim() };
-    if (original && rosterRows.some((row) => row.number === original)) edits.overrides[original] = updated;
-    else if (original) { const index = (edits.extras || []).findIndex((row) => row.number === original); if (index >= 0) edits.extras[index] = { ...edits.extras[index], ...updated }; else edits.extras.push(updated); }
-    else edits.extras.push({ ...updated, education:updated.grade === 'higher' ? 'อุดมศึกษา' : 'มัธยม', notes:'' });
-    localStorage.setItem(rosterOverrideKey, JSON.stringify(edits));
-    state.grade = updated.grade; state.room = updated.room;
-    $('#grade-select').value = state.grade; $('#room-select').value = state.room;
-    loadRows(); render(); closeRosterModal(); setStatus('บันทึกการแก้ไขรายชื่อไว้ในเครื่องแล้ว','#167047');
+    const message = $('#roster-form-message');
+    message.textContent = 'กำลังบันทึกข้อมูลกลาง…';
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/admin_upsert_activity_roster_v1`, {
+        method:'POST', cache:'no-store',
+        headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' },
+        body:JSON.stringify({ requested_year:'2569', current_student_number:original || null, requested_student_number:number, requested_full_name:name, requested_grade:updated.grade, requested_room:updated.room, requested_citizen_id:updated.citizen || null, requested_birth_iso:updated.birth_iso || null, requested_application_level:updated.application_level, requested_previous_year:previous_certificate_year || null, requested_previous_no:previous || null, requested_exam_status:exam_status, requested_special_needs:special_needs, requested_advisor_1:updated.advisor_1 || null, requested_advisor_2:updated.advisor_2 || null })
+      });
+      const payload = await response.json().catch(() => null);
+      const result = Array.isArray(payload) ? payload[0] : payload;
+      if (!response.ok || !result?.saved) throw new Error(result?.message || result?.error || `Supabase HTTP ${response.status}`);
+      state.grade = updated.grade; state.room = updated.room;
+      $('#grade-select').value = state.grade; $('#room-select').value = state.room;
+      await loadRosterData();
+      closeRosterModal(); setStatus('บันทึกทะเบียนรายชื่อเข้าฐานกลางแล้ว','#167047');
+    } catch (error) {
+      message.textContent = `ยังไม่บันทึก: ${error.message}`;
+      setStatus('แก้ไขไม่สำเร็จ · ข้อมูลเดิมยังอยู่','#a04b40');
+    }
   };
   const loadRosterData = async () => {
     try {
@@ -300,7 +312,7 @@
         if (access.role === 'admin') {
           const adminRows = [];
           for (let offset = 0; ; offset += 1000) {
-            const response = await fetch(`${supabaseUrl}/rest/v1/rpc/staff_activity_roster_page`, {
+            const response = await fetch(`${supabaseUrl}/rest/v1/rpc/staff_activity_roster_page_v2`, {
               method:'POST', cache:'no-store',
               headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' },
               body:JSON.stringify({ requested_year:'2569', _page_offset:offset, _page_limit:1000 }),
