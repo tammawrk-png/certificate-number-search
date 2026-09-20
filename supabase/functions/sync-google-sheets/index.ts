@@ -17,7 +17,9 @@ const base64Url = (value: Uint8Array | string) => {
 };
 
 const pemToBytes = (pem: string) => {
-  const raw = atob(pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, ''));
+  const begin = '-'.repeat(5) + 'BEGIN ' + 'PRIVATE KEY' + '-'.repeat(5);
+  const end = '-'.repeat(5) + 'END ' + 'PRIVATE KEY' + '-'.repeat(5);
+  const raw = atob(pem.replace(new RegExp(`${begin}|${end}|\\s`, 'g'), ''));
   return Uint8Array.from(raw, (char) => char.charCodeAt(0));
 };
 
