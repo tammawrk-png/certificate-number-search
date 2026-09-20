@@ -231,21 +231,33 @@
   }, true);
   let nameEditNumber = '';
   const closeNameEditModal = () => { $('#name-edit-modal').hidden = true; $('#name-edit-message').textContent = ''; nameEditNumber = ''; };
+  const splitEditableName = (value) => {
+    const parts = String(value || '').trim().split(/\s+/).filter(Boolean);
+    const titles = new Set(['เด็กชาย','เด็กหญิง','นาย','นางสาว','นาง','พระ','สามเณร']);
+    const title = titles.has(parts[0]) ? parts.shift() : '';
+    return { title, first: parts.shift() || '', last: parts.join(' ') };
+  };
   const openNameEditModal = (number) => {
     const row = state.rows.find((item) => item.number === number);
     if (!row) return;
     nameEditNumber = number;
-    $('#name-edit-value').value = row.name || '';
+    const parts = splitEditableName(row.name);
+    $('#name-edit-title-value').value = parts.title;
+    $('#name-edit-first').value = parts.first;
+    $('#name-edit-last').value = parts.last;
     $('#name-edit-message').textContent = '';
     $('#name-edit-modal').hidden = false;
-    $('#name-edit-value').focus();
-    $('#name-edit-value').select();
+    $('#name-edit-first').focus();
+    $('#name-edit-first').select();
   };
   const saveNameEdit = async (event) => {
     event.preventDefault();
     const row = state.rows.find((item) => item.number === nameEditNumber);
-    const name = $('#name-edit-value').value.trim();
-    if (!row || !name) { $('#name-edit-message').textContent = 'กรุณากรอกชื่อและนามสกุล'; return; }
+    const title = $('#name-edit-title-value').value.trim();
+    const first = $('#name-edit-first').value.trim().replace(/\s+/g, ' ');
+    const last = $('#name-edit-last').value.trim().replace(/\s+/g, ' ');
+    const name = [title, first, last].filter(Boolean).join(' ');
+    if (!row || !first || !last) { $('#name-edit-message').textContent = 'กรุณากรอกชื่อและนามสกุลให้ครบ'; return; }
     const token = access.role === 'admin' ? staffToken : supabaseKey;
     $('#name-edit-message').textContent = 'กำลังบันทึกข้อมูลกลาง…';
     try {
@@ -428,7 +440,9 @@
   };
   const loadRoom = () => { loadRows(); render(); };
   const printableRow = (student) => {
-    const saved = JSON.parse(localStorage.getItem(`dharma-direct-form-v3:${student.grade}:${student.room}`) || '{}');
+    // Production printing must use the current central roster. Local storage is
+    // only a demo-mode fallback and must never resurrect cleared PII.
+    const saved = demoMode ? JSON.parse(localStorage.getItem(`dharma-direct-form-v3:${student.grade}:${student.room}`) || '{}') : {};
     return { organization_name:'โรงเรียนวัดไร่ขิงวิทยา', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student, ...saved[student.number] };
   };
   const printStatus = (row) => {
