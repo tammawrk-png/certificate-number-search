@@ -213,7 +213,7 @@
     row.exam_status = selectedExam?.dataset.examValue || '';
     if (row.special_needs) row.exam_status = 'not_exam';
     if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = '';
-    const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved));
+    if (demoMode) { const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved)); }
     setStatus(demoMode ? 'บันทึกในโหมดทดลองแล้ว' : 'กำลังบันทึกข้อมูลกลาง…', '#765914'); render();
     void syncActivityRow(row).then(() => setStatus(rowSaveMessage(row), readyForSheet(row) ? '#167047' : '#765914')).catch((error) => setStatus(`บันทึกในเครื่องแล้ว · ซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40'));
   };
