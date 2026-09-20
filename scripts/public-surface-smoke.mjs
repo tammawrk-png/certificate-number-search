@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const [legacyHtml, activityHtml, activityJs, adminHtml, adminJs, config, activityCss] = await Promise.all([
   readFile(new URL('../index.html', import.meta.url), 'utf8'),
-  readFile(new URL('../activity.html', import.meta.url), 'utf8'),
+  readFile(new URL('../dharma/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../activity.js', import.meta.url), 'utf8'),
   readFile(new URL('../admin-pickup.html', import.meta.url), 'utf8'),
   readFile(new URL('../admin-pickup.js', import.meta.url), 'utf8'),
@@ -21,6 +21,7 @@ const migration24 = await readFile(new URL('../supabase/migrations/0024_registra
 
 assert.match(legacyHtml, /firebase-database-compat\.js/);
 assert.match(legacyHtml, /app\.js/);
+assert.match(legacyHtml, /activity\.html/);
 assert.match(activityHtml, /id="student-table"/);
 assert.match(activityHtml, /id="filled-count"/);
 assert.match(activityHtml, /template-links/);
@@ -28,6 +29,7 @@ assert.doesNotMatch(activityHtml, /class="level-button"/);
 assert.match(activityHtml, /id="room-select"/);
 assert.match(activityHtml, /id="student-body"/);
 assert.match(activityHtml, /id="print-button"/);
+assert.match(activityHtml, /base href="\.\.\//);
 assert.match(activityHtml, /font-upload/);
 assert.doesNotMatch(activityHtml, /admin-pickup\.html/);
 assert.doesNotMatch(activityHtml, /staff\.html/);

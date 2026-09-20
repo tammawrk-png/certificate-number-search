@@ -148,6 +148,10 @@
       </tr>`;
     }).join('') : '<tr><td colspan="15" class="empty-room">ชั้นและห้องนี้ยังไม่มีรายชื่อนักเรียน</td></tr>';
     const complete = students.filter(rowComplete).length;
+    document.querySelectorAll('#student-body [data-field="citizen"]').forEach((input) => { input.placeholder = 'เลขบัตรประชาชน'; });
+    document.querySelectorAll('#student-body .special-option').forEach((label) => { if (label.lastChild?.nodeType === Node.TEXT_NODE) label.lastChild.textContent = ' นักเรียนพิเศษ'; });
+    const specialLabel = $('#edit-special')?.parentElement;
+    if (specialLabel?.lastChild?.nodeType === Node.TEXT_NODE) specialLabel.lastChild.textContent = ' นักเรียนพิเศษ';
     const partial = students.filter((row) => !rowComplete(row) && (normalizeDigits(row.citizen) || row.exam_status || row.special_needs || row.notes)).length;
     const special = students.filter((row) => row.special_needs).length;
     const exams = students.filter((row) => row.exam_status === 'exam').length;
@@ -397,7 +401,46 @@
   window.addEventListener('afterprint', () => { document.body.classList.remove('printing-room','printing-all'); $('#all-print-sheet').innerHTML = ''; setStatus(`รายชื่อปี 2569 · ${rosterRows.length.toLocaleString('th-TH')} คน`, '#167047'); });
   $('#grade-select').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#room-select').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join(''); $('#grade-select').value = state.grade; $('#room-select').value = state.room;
   $('#edit-grade').innerHTML = grades.map((grade) => `<option value="${grade}">${gradeLabel(grade)}</option>`).join(''); $('#edit-room').innerHTML = rooms.map((room) => `<option value="${room}">${roomLabel(room)}</option>`).join('');
-  const startApp = () => { $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
+  const syncStatus = async () => {
+    if (access.role !== 'admin' || demoMode || !staffToken) return null;
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/google_sheet_sync_status`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' }, body:JSON.stringify({ requested_year:'2569' }), cache:'no-store' });
+    if (!response.ok) throw new Error(`Supabase HTTP ${response.status}`);
+    const payload = await response.json();
+    const status = Array.isArray(payload) ? payload[0] : payload;
+    if (status?.state === 'complete') setStatus('ซิงก์ชีทแล้ว', '#167047');
+    else if (status?.state === 'failed') setStatus('ซิงก์ชีทไม่สำเร็จ', '#a04b40');
+    else if (status?.state === 'pending' || status?.state === 'running') setStatus('รอซิงก์ชีท…', '#765914');
+    return status;
+  };
+  const requestSheetSync = async (button) => {
+    if (access.role !== 'admin' || demoMode || !staffToken) return;
+    button.disabled = true;
+    setStatus('กำลังส่งคำขอซิงก์…', '#765914');
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/request_google_sheet_sync`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' }, body:JSON.stringify({ requested_year:'2569' }), cache:'no-store' });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.message || payload?.error || `Supabase HTTP ${response.status}`);
+      setStatus('ส่งคำขอแล้ว · รอ worker ซิงก์', '#765914');
+      window.setTimeout(() => { void syncStatus().catch(() => {}); }, 1500);
+    } catch (error) {
+      setStatus(`ขอซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40');
+    } finally {
+      window.setTimeout(() => { button.disabled = false; }, 1500);
+    }
+  };
+  const installAdminSyncControl = () => {
+    if (access.role !== 'admin') return;
+    const header = document.querySelector('.control-bar');
+    if (!header || $('#sync-now-button')) return;
+    const button = document.createElement('button');
+    button.type = 'button'; button.id = 'sync-now-button'; button.className = 'action-button sync-now-button';
+    button.innerHTML = '<span class="line-icon" aria-hidden="true">↻</span>ซิงก์ทันที';
+    button.title = 'ส่งคำขอซิงก์ข้อมูลกลางไปยัง Google Sheets';
+    button.addEventListener('click', () => { void requestSheetSync(button); });
+    header.insertBefore(button, header.querySelector('.template-links'));
+    void syncStatus().catch(() => {});
+  };
+  const startApp = () => { $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); installAdminSyncControl(); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
   $('#grade-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
   $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-previous-year').addEventListener('input', syncRosterExamOptions); $('#edit-application-level').addEventListener('change', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
   $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });

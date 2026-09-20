@@ -92,3 +92,4 @@
   .table-scroll tr.student-row td{grid-template-columns:6.4rem minmax(0,1fr);gap:5px}
   .table-scroll tr.student-row td::before{font-size:.68rem!important}
 }
+.sync-now-button{background:#f3d27c;color:#4d3d12}.teacher-access .sync-now-button,.student-access .sync-now-button{display:none}.sync-now-button:disabled{opacity:.65;cursor:wait}

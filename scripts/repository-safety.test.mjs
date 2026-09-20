@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { readFile } from 'node:fs/promises';
 
 const run = promisify(execFile);
 const { stdout } = await run('git', ['ls-files', '-z']);
@@ -15,7 +16,12 @@ const secretLookingPattern = new RegExp(
 );
 for (const name of textFiles) {
   if (name === 'scripts/repository-safety.test.mjs') continue;
-  const { stdout: rawContent } = await run('git', ['show', `HEAD:${name}`]);
+  let rawContent;
+  try {
+    ({ stdout: rawContent } = await run('git', ['show', `HEAD:${name}`]));
+  } catch {
+    rawContent = await readFile(name, 'utf8');
+  }
   const content = rawContent
     // GitHub Actions secret/variable handles are safe references, not values.
     .replace(/\$\{\{\s*secrets\.[A-Z0-9_]+\s*\}\}/g, 'GITHUB_SECRET_REFERENCE')
