@@ -6,7 +6,7 @@ import { join } from 'node:path';
 const root = new URL('../supabase/migrations/', import.meta.url);
 const rootPath = fileURLToPath(root);
 const names = (await readdir(rootPath)).filter((name) => name.endsWith('.sql')).sort();
-const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028', '0029', '0030', '0031', '0032', '0033', '0034', '0035', '0036', '0037', '0038', '0039', '0040', '0041', '0042', '0043', '0044', '0045', '0046', '0047', '0048', '0049', '0050'];
+const expected = ['0001', '0002', '0003', '0004', '0006', '0007', '0008', '0009', '0010', '0011', '0012', '0013', '0014', '0015', '0016', '0017', '0018', '0019', '0020', '0021', '0022', '0023', '0024', '0025', '0026', '0027', '0028', '0029', '0030', '0031', '0032', '0033', '0034', '0035', '0036', '0037', '0038', '0039', '0040', '0041', '0042', '0043', '0044', '0045', '0046', '0047', '0048', '0049', '0050', '0051'];
 assert.deepEqual(names.map((name) => name.slice(0, 4)), expected);
 
 const [m11, m12, m15, m17, m18, m19, m20, m21, m22, m23, m24, m25, m26, m27, m28, m29, m31, m32, m33, m34, m35, m36, m37, m40, m41] = await Promise.all([
@@ -41,6 +41,7 @@ const m45 = await readFile(join(rootPath, '0045_admin_central_roster_edit.sql'),
 const m48 = await readFile(join(rootPath, '0048_name_mapping_and_registration_window.sql'), 'utf8');
 const m49 = await readFile(join(rootPath, '0049_single_submitted_level.sql'), 'utf8');
 const m50 = await readFile(join(rootPath, '0050_sheet_rows_require_exam_identity_and_sort.sql'), 'utf8');
+const m51 = await readFile(join(rootPath, '0051_prefer_active_application_level.sql'), 'utf8');
 assert.doesNotMatch(m11, /grant execute on function public\.refresh_certificate_matches\(\) to authenticated/);
 assert.match(m12, /staff_roles/);
 assert.match(m12, /STAFF_ROLE_REQUIRED/);
@@ -120,6 +121,10 @@ assert.match(m49, /application_status = 'cancelled'/);
 assert.match(m50, /a\.exam_status = 'exam'/);
 assert.match(m50, /s\.citizen_id ~ '\^\[0-9\]\{13\}\$'/);
 assert.match(m50, /order by grade_level, room_no, name_body/);
+assert.match(m51, /prefer the level that has an active submitted registration/i);
+assert.match(m51, /er\.application_status in \('submitted', 'verified'\)/);
+assert.match(m51, /create or replace function public\.public_activity_access_v2/);
+assert.match(m51, /create or replace function public\.staff_activity_roster_page_v2/);
 assert.match(m35, /create or replace function public\.public_activity_access/);
 assert.match(m35, /requested_role text/);
 assert.match(m35, /requested_code text/);
