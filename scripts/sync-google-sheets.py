@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 
 import requests
 from google.oauth2 import service_account
@@ -83,7 +84,18 @@ def split_name(row: dict) -> tuple[str, str, str]:
 
 def sheet_values(rows: list[dict], level: str) -> list[list[str]]:
     values: list[list[str]] = []
-    for index, row in enumerate(rows, start=1):
+    def sort_key(row: dict) -> tuple[int, int, str, str, str]:
+        room = value(row, "class_room")
+        match = re.search(r"ม\.(\d+)\s*/\s*(\d+)", room)
+        grade = int(match.group(1)) if match else 999
+        room_no = int(match.group(2)) if match else 999
+        return (grade, room_no, value(row, "first_name"), value(row, "last_name"), value(row, "current_student_number"))
+
+    eligible_rows = [
+        row for row in rows
+        if re.fullmatch(r"\d{13}", value(row, "citizen_id")) and value(row, "birth_date_be").strip()
+    ]
+    for index, row in enumerate(sorted(eligible_rows, key=sort_key), start=1):
         title, first_name, last_name = split_name(row)
         base = [
             str(index), title, first_name, last_name, value(row, "citizen_id"), value(row, "dhamma_level"),
