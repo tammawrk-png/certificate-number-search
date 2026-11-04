@@ -26,9 +26,13 @@
   const accessSessionKey = 'dharma-activity-session-v1';
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
   if (hashParams.get('access_token')) { sessionStorage.setItem('dharma_staff_access_token', hashParams.get('access_token')); history.replaceState({}, '', `${location.pathname}?admin=1`); }
-  const staffToken = sessionStorage.getItem('dharma_staff_access_token') || '';
+  let staffToken = sessionStorage.getItem('dharma_staff_access_token') || '';
   let pendingPrint = '';
   const storageKey = () => `dharma-direct-form-v3:${state.grade}:${state.room}`;
+  const pendingStorageKey = 'dharma-activity-pending-v1';
+  const pendingRows = () => { try { return JSON.parse(localStorage.getItem(pendingStorageKey) || '{}'); } catch { return {}; } };
+  const rememberPendingRow = (row) => { const pending = pendingRows(); pending[row.number] = row; localStorage.setItem(pendingStorageKey, JSON.stringify(pending)); };
+  const forgetPendingRow = (number) => { const pending = pendingRows(); if (!pending[number]) return; delete pending[number]; if (Object.keys(pending).length) localStorage.setItem(pendingStorageKey, JSON.stringify(pending)); else localStorage.removeItem(pendingStorageKey); };
   const rosterOverrideKey = 'dharma-roster-overrides-2569-v1';
   let rosterRows = [];
   const configuredSupabase = window.APP_CONFIG?.supabase || {};
@@ -93,6 +97,16 @@
       ? 'บันทึกแล้ว · รอข้อมูลให้ครบก่อนซิงก์ชีท'
       : 'บันทึกแล้ว · ไม่ส่งเข้าชีท';
   const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
+  const showAdminReauthentication = () => {
+    sessionStorage.removeItem('dharma_staff_access_token');
+    staffToken = '';
+    access.role = '';
+    document.body.classList.add('admin-mode');
+    $('#app-shell').hidden = true;
+    $('#access-gate').hidden = false;
+    $('#admin-login-panel').hidden = false;
+    $('#access-message').textContent = 'เซสชันผู้ดูแลหมดอายุ กรุณาเข้าสู่ระบบด้วย Google ใหม่';
+  };
   const syncActivityRow = async (row) => {
     if (demoMode || !access.role || !row.application_level) return { saved: true, localOnly: true };
     if (access.role !== 'admin' && registrationStatusLoaded && !registrationOpen) throw new Error('REGISTRATION_CLOSED');
@@ -112,7 +126,11 @@
       }),
     });
     const payload = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(payload?.message || payload?.error || `Supabase HTTP ${response.status}`);
+    if (!response.ok) {
+      const detail = String(payload?.message || payload?.error || '');
+      if ([401, 403].includes(response.status) || /invalid\s+jwt|jwt/i.test(detail)) showAdminReauthentication();
+      throw new Error(detail || `Supabase HTTP ${response.status}`);
+    }
     const result = Array.isArray(payload) ? payload[0] : payload;
     if (!result?.saved) throw new Error(result?.message || 'บันทึกข้อมูลไม่สำเร็จ');
     return result;
@@ -160,9 +178,11 @@
     // Live Supabase data is authoritative. Device-local drafts must not
     // overwrite a newer value saved from another device.
     const saved = demoMode ? JSON.parse(localStorage.getItem(storageKey()) || '{}') : {};
+    const pending = demoMode ? {} : pendingRows();
     state.rows = studentsForRoom().map((student) => ({
       organization_name:'โรงเรียนวัดไร่ขิงวิทยา', organization_location:'ไร่ขิง / สามพราน / นครปฐม', temple_affiliation:'วัดไร่ขิงพระอารามหลวง', school_council:'คณะจังหวัดนครปฐม', notes:'', special_needs:false, exam_status:'', ...student,
       ...saved[student.number],
+      ...pending[student.number],
       ...(student.match_status === 'auto_matched' && String(student.previous || '').trim() && !String(saved[student.number]?.previous || '').trim()
         ? { previous: student.previous, legacy_level: student.legacy_level, match_status: student.match_status }
         : {}),
@@ -242,8 +262,9 @@
     if (row.special_needs) row.exam_status = 'not_exam';
     if (row.exam_status === 'not_exam' && !canSkipExam(row)) row.exam_status = '';
     if (demoMode) { const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}'); saved[row.number] = row; localStorage.setItem(storageKey(), JSON.stringify(saved)); }
+    else rememberPendingRow(row);
     setStatus(demoMode ? 'บันทึกในโหมดทดลองแล้ว' : 'กำลังบันทึกข้อมูลกลาง…', '#765914'); render();
-    void syncActivityRow(row).then(() => setStatus(rowSaveMessage(row), readyForSheet(row) ? '#167047' : '#765914')).catch((error) => setStatus(`บันทึกในเครื่องแล้ว · ซิงก์ไม่สำเร็จ: ${error.message}`, '#a04b40'));
+    void syncActivityRow(row).then(() => { if (!demoMode) forgetPendingRow(row.number); setStatus(rowSaveMessage(row), readyForSheet(row) ? '#167047' : '#765914'); }).catch((error) => setStatus(`ยังไม่ซิงก์ส่วนกลาง · เก็บฉบับร่างไว้แล้ว: ${error.message}`, '#a04b40'));
   };
   const commitPreviousEdit = (cell) => {
     const button = cell?.querySelector('[data-edit-previous]');
