@@ -61,9 +61,24 @@ def value(row: dict, key: str) -> str:
     return "" if row.get(key) is None else str(row.get(key))
 
 
+NAME_TITLES = ("เด็กหญิง", "เด็กชาย", "นางสาว", "สามเณร", "พระ", "นาย", "นาง")
+
+
 def split_name(row: dict) -> tuple[str, str, str]:
-    title = value(row, "title")
-    return title, value(row, "first_name"), value(row, "last_name")
+    """Keep the form columns separate even when an old row stores a title in first_name."""
+    title = value(row, "title").strip()
+    first_name = value(row, "first_name").strip()
+    last_name = value(row, "last_name").strip()
+    for candidate in NAME_TITLES:
+        if first_name.startswith(candidate) and len(first_name) > len(candidate):
+            title = candidate
+            first_name = first_name[len(candidate):].strip()
+            break
+    parts = first_name.split()
+    if len(parts) > 1:
+        first_name = parts[0]
+        last_name = " ".join(parts[1:] + ([last_name] if last_name else []))
+    return title, first_name, last_name
 
 
 def sheet_values(rows: list[dict], level: str) -> list[list[str]]:

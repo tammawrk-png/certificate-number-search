@@ -20,6 +20,8 @@
   };
   const state = { grade:'1', room:'1', level:'ตรี', rows:[] };
   const access = { role:'', code:'', studentNumber:'' };
+  let registrationOpen = false;
+  let registrationStatusLoaded = false;
   const adminRequested = new URLSearchParams(location.search).get('admin') === '1';
   const accessSessionKey = 'dharma-activity-session-v1';
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
@@ -93,8 +95,9 @@
   const setStatus = (text, color = '') => { $('#save-status').textContent = text; if (color) $('#save-status').style.color = color; };
   const syncActivityRow = async (row) => {
     if (demoMode || !access.role || !row.application_level) return { saved: true, localOnly: true };
+    if (access.role !== 'admin' && registrationStatusLoaded && !registrationOpen) throw new Error('REGISTRATION_CLOSED');
     const token = access.role === 'admin' ? staffToken : supabaseKey;
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/save_activity_form_row_v2`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/save_activity_form_row_v3`, {
       method:'POST', cache:'no-store',
       headers:{ apikey:supabaseKey, Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
       body:JSON.stringify({
@@ -113,6 +116,29 @@
     const result = Array.isArray(payload) ? payload[0] : payload;
     if (!result?.saved) throw new Error(result?.message || 'บันทึกข้อมูลไม่สำเร็จ');
     return result;
+  };
+  const applyRegistrationWindowLock = () => {
+    const locked = access.role !== 'admin' && registrationStatusLoaded && !registrationOpen;
+    document.body.classList.toggle('registration-closed', locked);
+    document.querySelectorAll('#student-body [data-field], #student-body [data-edit-name-number], #student-body [data-edit-previous], #student-body [data-open-date]').forEach((element) => {
+      element.disabled = locked;
+      element.setAttribute('aria-disabled', String(locked));
+    });
+    const note = $('#registration-window-status');
+    if (note) { note.textContent = locked ? 'ปิดรับสมัคร · ดูข้อมูลได้อย่างเดียว' : registrationStatusLoaded ? 'เปิดรับสมัคร · แก้ไขและบันทึกได้' : 'กำลังตรวจสถานะรับสมัคร…'; note.classList.toggle('closed', locked); note.classList.toggle('open', !locked && registrationStatusLoaded); }
+  };
+  const loadRegistrationWindow = async () => {
+    if (demoMode) { registrationOpen = true; registrationStatusLoaded = true; applyRegistrationWindowLock(); return; }
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/public_registration_window_status`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${supabaseKey}`, 'Content-Type':'application/json' }, body:JSON.stringify({ requested_year:'2569' }), cache:'no-store' });
+      if (!response.ok) throw new Error(`registration window ${response.status}`);
+      const payload = await response.json();
+      const row = Array.isArray(payload) ? payload[0] : payload;
+      registrationOpen = Boolean(row?.is_open) && (!row?.opens_at || Date.now() >= Date.parse(row.opens_at)) && (!row?.closes_at || Date.now() <= Date.parse(row.closes_at));
+      registrationStatusLoaded = true;
+      applyRegistrationWindowLock();
+      if (access.role === 'admin') updateAdminWindowControl();
+    } catch (error) { console.warn(error); registrationOpen = false; registrationStatusLoaded = true; applyRegistrationWindowLock(); }
   };
   const rosterEdits = () => { try { return JSON.parse(localStorage.getItem(rosterOverrideKey) || '{"overrides":{},"extras":[]}'); } catch { return { overrides:{}, extras:[] }; } };
   const studentsForRoom = () => {
@@ -198,6 +224,7 @@
     document.querySelectorAll('[data-edit-name-number]').forEach((button) => button.addEventListener('click', () => openNameEditModal(button.dataset.editNameNumber)));
     document.querySelectorAll('[data-edit-previous]').forEach((button) => button.addEventListener('click', () => { const cell = button.closest('.previous-cell'); const inputs = cell?.querySelectorAll('[data-field="previous"], [data-field="previous_certificate_year"]'); if (!inputs?.length) return; button.hidden = true; inputs.forEach((input) => { input.hidden = false; input.addEventListener('blur', () => { setTimeout(() => { if (cell.contains(document.activeElement)) return; const tr = cell.closest('tr[data-number]'); if (tr) updateRow(tr); }, 0); }, { once:false }); }); inputs[0].focus(); }));
     document.querySelectorAll('[data-open-date]').forEach((button) => button.addEventListener('click', () => { const input = button.parentElement.querySelector('input[type="date"]'); if (!input) return; input.focus({ preventScroll:true }); try { if (input.showPicker) { input.showPicker(); return; } } catch {} input.click(); }));
+    applyRegistrationWindowLock();
   };
   const syncExamCheckboxes = (tr) => {
     const row = state.rows.find((item) => item.number === tr.dataset.number); if (!row) return;
@@ -520,6 +547,25 @@
       window.setTimeout(() => { button.disabled = false; }, 1500);
     }
   };
+  const updateAdminWindowControl = () => {
+    const button = $('#registration-window-button');
+    if (!button) return;
+    button.textContent = registrationOpen ? 'ปิดรับสมัคร' : 'เปิดรับสมัคร';
+    button.classList.toggle('window-open', registrationOpen);
+    button.title = registrationOpen ? 'ปิดการแก้ไขข้อมูลสำหรับครูและนักเรียน' : 'เปิดให้ครูและนักเรียนกรอก/แก้ไขข้อมูล';
+  };
+  const toggleRegistrationWindow = async (button) => {
+    if (access.role !== 'admin' || !staffToken) return;
+    button.disabled = true;
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/admin_set_registration_window`, { method:'POST', headers:{ apikey:supabaseKey, Authorization:`Bearer ${staffToken}`, 'Content-Type':'application/json' }, body:JSON.stringify({ requested_year:'2569', requested_open:!registrationOpen, requested_note:null }), cache:'no-store' });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.message || payload?.error || `Supabase HTTP ${response.status}`);
+      const row = Array.isArray(payload) ? payload[0] : payload;
+      registrationOpen = Boolean(row?.is_open); registrationStatusLoaded = true; updateAdminWindowControl(); applyRegistrationWindowLock(); setStatus(registrationOpen ? 'เปิดรับสมัครแล้ว' : 'ปิดรับสมัครแล้ว · ผู้ใช้ทั่วไปดูข้อมูลได้อย่างเดียว', registrationOpen ? '#167047' : '#765914');
+    } catch (error) { setStatus(`เปลี่ยนสถานะรับสมัครไม่สำเร็จ: ${error.message}`, '#a04b40'); }
+    finally { button.disabled = false; }
+  };
   const installAdminSyncControl = () => {
     if (access.role !== 'admin') return;
     const header = document.querySelector('.control-bar');
@@ -530,6 +576,11 @@
     button.title = 'ส่งคำขอซิงก์ข้อมูลกลางไปยัง Google Sheets';
     button.addEventListener('click', () => { void requestSheetSync(button); });
     header.insertBefore(button, header.querySelector('.template-links'));
+    const windowButton = document.createElement('button');
+    windowButton.type = 'button'; windowButton.id = 'registration-window-button'; windowButton.className = 'action-button registration-window-button';
+    windowButton.addEventListener('click', () => { void toggleRegistrationWindow(windowButton); });
+    header.insertBefore(windowButton, header.querySelector('.template-links'));
+    updateAdminWindowControl();
     void syncStatus().catch(() => {});
   };
   const organizeControlBar = () => {
@@ -541,11 +592,12 @@
     const printButton = $('#print-button');
     const printAllButton = $('#print-all-button');
     const syncButton = $('#sync-now-button');
+    const windowButton = $('#registration-window-button');
     const fontButton = header.querySelector('.font-button');
     const saveStatus = $('#save-status');
     const logoutButton = $('#logout-button');
     const actions = document.createElement('div'); actions.className = 'toolbar-actions';
-    [printButton, printAllButton, syncButton].filter(Boolean).forEach((element) => actions.appendChild(element));
+    [printButton, printAllButton, syncButton, windowButton].filter(Boolean).forEach((element) => actions.appendChild(element));
     const tools = document.createElement('div'); tools.className = 'toolbar-tools';
     [fontButton, saveStatus, logoutButton].filter(Boolean).forEach((element) => tools.appendChild(element));
     const backLink = document.querySelector('.back-link');
@@ -582,7 +634,7 @@
       return true;
     } catch { sessionStorage.removeItem(accessSessionKey); return false; }
   };
-  const startApp = () => { rememberAccess(); $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); installAdminSyncControl(); organizeControlBar(); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); };
+  const startApp = () => { rememberAccess(); $('#app-shell').hidden = false; $('#access-gate').hidden = true; document.body.classList.add('activity-access'); document.body.classList.toggle('admin-access', access.role === 'admin'); document.body.classList.toggle('teacher-access', access.role === 'teacher'); document.body.classList.toggle('student-access', access.role === 'student'); installAdminSyncControl(); organizeControlBar(); setStatus('กำลังโหลดรายชื่อปี 2569…', '#765914'); loadRows(); render(); loadRosterData(); void loadRegistrationWindow(); };
   $('#grade-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.grade = event.target.value; if (state.grade === 'higher') state.room = 'higher'; else if (state.room === 'higher') state.room = '1'; $('#room-select').value = state.room; loadRoom(); }); $('#room-select').addEventListener('change', (event) => { if (access.role === 'teacher' || access.role === 'student') return; state.room = event.target.value; if (state.room === 'higher') state.grade = 'higher'; $('#grade-select').value = state.grade; loadRoom(); }); $('#print-button').addEventListener('click', printCurrentRoom); $('#print-all-button').addEventListener('click', printAll); document.querySelectorAll('[data-close-print-preview]').forEach((element) => element.addEventListener('click', closePrintPreview)); $('#confirm-print-button').addEventListener('click', confirmPrint);
   $('#roster-editor-button').addEventListener('click', () => openRosterModal()); $('#roster-form').addEventListener('submit', saveRosterEdit); document.querySelectorAll('[data-close-roster-modal]').forEach((element) => element.addEventListener('click', closeRosterModal)); $('#name-edit-form').addEventListener('submit', saveNameEdit); document.querySelectorAll('[data-close-name-modal]').forEach((element) => element.addEventListener('click', closeNameEditModal)); $('#edit-previous').addEventListener('input', syncRosterExamOptions); $('#edit-previous-year').addEventListener('input', syncRosterExamOptions); $('#edit-application-level').addEventListener('change', syncRosterExamOptions); $('#edit-exam').addEventListener('change', () => syncRosterExamChecks('exam')); $('#edit-no-exam').addEventListener('change', () => syncRosterExamChecks('no-exam')); $('#edit-special').addEventListener('change', () => syncRosterExamChecks('special'));
   $('#toggle-detail-columns').addEventListener('click', (event) => { document.body.classList.toggle('details-visible'); event.currentTarget.textContent = document.body.classList.contains('details-visible') ? 'ซ่อนข้อมูลประกอบ' : 'แสดงข้อมูลประกอบ'; });
